@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { auth } from '../config/firebase';
+import { auth, db } from '../config/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import '../css/AdminLoginPage.css';
 
 function AdminLoginPage() {
@@ -16,23 +15,28 @@ function AdminLoginPage() {
     setError('');
 
     try {
-      // Authenticate with Firebase
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      
-      // Check Firestore for a user document within the "facility" collection with the matching email
-      const facilityQuery = query(collection(db, "facility"), where("email", "==", email));
-      const querySnapshot = await getDocs(facilityQuery);
+      // Reference to the "facility" document inside the "users" collection
+      const facilityRef = doc(db, "Users", "facility");
 
-      // Check if a document with the email exists under "facility"
-      if (!querySnapshot.empty) {
-        // User exists in Firestore
-        navigate('/admin-dashboard');
+      // Get the document
+      const facilityDoc = await getDoc(facilityRef);
+
+      // Check if the facility document exists and if the email and password match
+      if (facilityDoc.exists()) {
+        const facilityData = facilityDoc.data();
+        if (facilityData.email === email && facilityData.password === password) {
+          // If credentials match, redirect to the AdminDashboardPage
+          navigate('/AdminDashboardPage');
+        } else {
+          // If credentials do not match, show an error
+          setError('Incorrect email or password.');
+        }
       } else {
-        // If the user does not exist in Firestore, sign out and show error
-        await auth.signOut();
-        setError('User not found in the system.');
+        // If the facility document does not exist, show an error
+        setError('Facility not found in the system.');
       }
     } catch (error) {
+      console.error("Error during login:", error);
       setError('Failed to log in. Please check your email and password.');
     }
   };

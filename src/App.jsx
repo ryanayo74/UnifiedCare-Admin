@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import LandingPage from './public/LandingPage.jsx';
 import AdminLoginPage from './public/AdminLoginPage.jsx';
+import AdminDashboardPage from './public/AdminDashboardPage.jsx';
+
 
 export default function App() {
   
@@ -10,6 +12,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/AdminLoginPage" element={<AdminLoginPage />} />
+        <Route path="/AdminDashboardPage" element={<AdminDashboardPage />} />
       </Routes>
     </Router>
   );
