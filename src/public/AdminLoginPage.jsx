@@ -25,7 +25,10 @@ function AdminLoginPage() {
       if (facilityDoc.exists()) {
         const facilityData = facilityDoc.data();
         if (facilityData.email === email && facilityData.password === password) {
-          // If credentials match, redirect to the AdminDashboardPage
+          // Store authentication status in localStorage
+          localStorage.setItem('isAuthenticated', 'true');
+          
+          // Redirect to the AdminDashboardPage
           navigate('/AdminDashboardPage');
         } else {
           // If credentials do not match, show an error
