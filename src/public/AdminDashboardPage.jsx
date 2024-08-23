@@ -1,56 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import '../css/LandingPage.css';
 
-function LandingPage() {
-  const navigate = useNavigate();
+function AdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate an API call or other logic
+    // Simulate an API call or other logic to load dashboard data
     setTimeout(() => {
       setIsLoading(false);
     }, 1000); // Adjust the timeout as needed
   }, []);
 
-  const handleJoinUsClick = () => {
-    navigate('/AdminLoginPage'); // Redirect to AdminJoinUsPage
-  };
+  if (isLoading) {
+    return <div>Loading...</div>; // Show a loading state while data is being fetched
+  }
 
-  const handleLoginClick = () => {
-    navigate('/messages'); // Redirect to FacilityMessagePage
-  };
-  
   return (
-    <div className="landing-page">
+    <div className="dashboard-page">
       <header>
-        <div className="logo-container">
-          <div className="logo-text">UnifiedCare</div>
-        </div>
-        <nav>
-          <a href="#">Home</a>
-          <a href="#">About Us</a>
-          <a href="#" className="login" onClick={handleLoginClick}>
-            Log in
-          </a>
-        </nav>
+        <h1>Admin Dashboard</h1>
       </header>
       <main>
-        <h1>Grow your Facility with UnifiedCare!</h1>
-        <p>
-          Welcome to UnifiedCare! Join our network of top facilities and help
-          provide the best care possible. Partner with us to reach more families
-          and showcase your services. Let's work together to make a difference.
-          Join UnifiedCare today!
-        </p>
-        <button className="register" onClick={handleJoinUsClick}>
-          JOIN US NOW
-        </button>
-        <div className="image-container">
-        </div>
+        <p>Welcome to your dashboard!</p>
+        {/* Add other dashboard-specific components or content here */}
       </main>
     </div>
   );
 }
 
-export default LandingPage;
+export default AdminDashboardPage;

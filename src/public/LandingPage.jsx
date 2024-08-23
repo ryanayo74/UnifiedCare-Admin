@@ -14,11 +14,11 @@ function LandingPage() {
   }, []);
 
   const handleJoinUsClick = () => {
-    navigate('/AdminLoginPage'); // Redirect to AdminJoinUsPage
+    navigate('/messages'); // Redirect to AdminJoinUsPage
   };
 
   const handleLoginClick = () => {
-    navigate('/messages'); // Redirect to FacilityMessagePage
+    navigate('/AdminLoginPage'); // Redirect to FacilityMessagePage
   };
   
   return (

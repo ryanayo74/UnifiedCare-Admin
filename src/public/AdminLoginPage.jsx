@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth, db } from '../config/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, query, where } from "firebase/firestore"; 
 import '../css/AdminLoginPage.css';
+import { db } from '../config/firebase'; // Make sure to import your firebase configuration
 
 function AdminLoginPage() {
   const [email, setEmail] = useState('');
@@ -15,33 +15,44 @@ function AdminLoginPage() {
     setError('');
 
     try {
-      // Reference to the "facility" document inside the "users" collection
-      const facilityRef = doc(db, "Users", "facility");
-
-      // Get the document
-      const facilityDoc = await getDoc(facilityRef);
-
-      // Check if the facility document exists and if the email and password match
-      if (facilityDoc.exists()) {
-        const facilityData = facilityDoc.data();
-        if (facilityData.email === email && facilityData.password === password) {
-          // Store authentication status in localStorage
+      // Query all facilities in the "newUserFacility" collection
+      const facilityQuery = query(collection(db, "Users", "facility", "newUserFacility"), where("email", "==", email));
+      const facilitySnapshot = await getDocs(facilityQuery);
+      
+      let userAuthenticated = false;
+      
+      // Check if any facility document matches the email and password
+      facilitySnapshot.forEach((doc) => {
+        const facilityData = doc.data();
+        if (facilityData.password === password) {
+          userAuthenticated = true;
           localStorage.setItem('isAuthenticated', 'true');
-          
-          // Redirect to the AdminDashboardPage
           navigate('/AdminDashboardPage');
-        } else {
-          // If credentials do not match, show an error
-          setError('Incorrect email or password.');
         }
-      } else {
-        // If the facility document does not exist, show an error
-        setError('Facility not found in the system.');
+      });
+
+      // If not authenticated with a facility, check the admin credentials
+      if (!userAuthenticated) {
+        const adminRef = doc(db, "Users", "admin");
+        const adminDoc = await getDoc(adminRef);
+
+        if (adminDoc.exists()) {
+          const adminData = adminDoc.data();
+          if (adminData.email === email && adminData.password === password) {
+            userAuthenticated = true;
+            localStorage.setItem('isAuthenticated', 'true');
+            navigate('/AdminDashboardPage');
+          }
+        }
+      }
+
+      if (!userAuthenticated) {
+        setError('Incorrect email or password.');
       }
     } catch (error) {
       console.error("Error during login:", error);
       setError('Failed to log in. Please check your email and password.');
-    }
+    }    
   };
 
   return (
