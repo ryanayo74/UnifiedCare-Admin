@@ -1,30 +1,58 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import '../css/AdminDashboardPage.css';
 
 function AdminDashboardPage() {
-  const [isLoading, setIsLoading] = useState(true);
+    const navigate = useNavigate();
 
-  useEffect(() => {
-    // Simulate an API call or other logic to load dashboard data
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1000); // Adjust the timeout as needed
-  }, []);
+    // Logout function
+    const handleLogout = () => {
+        // Remove the authentication status from localStorage
+        localStorage.removeItem('isAuthenticated');
 
-  if (isLoading) {
-    return <div>Loading...</div>; // Show a loading state while data is being fetched
-  }
+        // Redirect to the login page
+        navigate('/AdminLoginPage');
+    };
 
-  return (
-    <div className="dashboard-page">
-      <header>
-        <h1>Admin Dashboard</h1>
-      </header>
-      <main>
-        <p>Welcome to your dashboard!</p>
-        {/* Add other dashboard-specific components or content here */}
-      </main>
-    </div>
-  );
+    return (
+        <div className="dashboard-container">
+            <aside className="sidebar">
+                <div className="logo-container">
+                    <img src="/path-to-logo.png" alt="UnifiedCare Logo" className="logo" />
+                </div>
+                <nav className="menu">
+                    <a href="#" className="menu-item">Dashboard</a>
+                    <a href="#" className="menu-item">Therapist</a>
+                    <a href="#" className="menu-item">Parents</a>
+                    <a href="#" className="menu-item">Announcements</a>
+                    <a href="#" className="menu-item">Approval</a>
+                    <a href="#" className="menu-item">Messages</a>
+                </nav>
+                <div className="logout">
+                    {/* Attach the handleLogout function to the logout link */}
+                    <a href="#" onClick={handleLogout}>Logout</a>
+                </div>
+            </aside>
+            <main className="main-content">
+                <header className="header">
+                    <div className="facility-info">
+                        <img src="/path-to-facility.jpg" alt="Facility" className="facility-img" />
+                        <span>Sample Facility</span>
+                    </div>
+                </header>
+                <section className="dashboard">
+                    <h1>Users</h1>
+                    <canvas id="userChart"></canvas>
+                    <div className="user-stats">
+                        <p>Total Users: <span>35</span></p>
+                        <p>Therapist Users: <span>12</span></p>
+                        <p>Parent Users: <span>23</span></p>
+                        <p>Average Session Duration: <span>3m 12s</span></p>
+                    </div>
+                </section>
+            </main>
+        </div>
+    );
 }
 
 export default AdminDashboardPage;
