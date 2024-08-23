@@ -66,8 +66,8 @@ npm start
 
 ### Key Sections to Update
 
-- **Firebase Configuration:** Replace the placeholders in `firebaseConfig.js` with your actual Firebase project configuration.
-- **GitHub Repository Link:** Replace `https://github.com/yourusername/unifiedcare-admin.git` with your actual GitHub repository URL.
+- **Firebase Configuration:** Replace the placeholders in `firebase.js` with your actual Firebase project configuration.
+- **GitHub Repository Link:** Replace `https://github.com/Ryanayo74/unifiedcare-admin.git` with your actual GitHub repository URL.
 - **Firestore Setup:** Ensure that the Firestore setup and structure match your project's requirements.
 
 Feel free to modify this `README.md` to better suit your project's specific needs!

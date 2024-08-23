@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, doc, getDoc, query, where } from "firebase/firestore"; 
 import '../css/AdminLoginPage.css';
-import { db } from '../config/firebase'; // Make sure to import your firebase configuration
+import { db } from '../config/firebase'; // Import your Firebase configuration
 
 function AdminLoginPage() {
   const [email, setEmail] = useState('');
@@ -15,7 +15,7 @@ function AdminLoginPage() {
     setError('');
 
     try {
-      // Query all facilities in the "newUserFacility" collection
+      // Query for AdminFacility users
       const facilityQuery = query(collection(db, "Users", "facility", "newUserFacility"), where("email", "==", email));
       const facilitySnapshot = await getDocs(facilityQuery);
       
@@ -27,25 +27,28 @@ function AdminLoginPage() {
         if (facilityData.password === password) {
           userAuthenticated = true;
           localStorage.setItem('isAuthenticated', 'true');
-          navigate('/AdminDashboardPage');
+          localStorage.setItem('userType', 'AdminFacility'); // Store user type
+          navigate('/AdminDashboardPage'); // Navigate to AdminFacility dashboard
         }
       });
 
-      // If not authenticated with a facility, check the admin credentials
+      // If not authenticated with a facility, check AdminDev credentials
       if (!userAuthenticated) {
-        const adminRef = doc(db, "Users", "admin");
-        const adminDoc = await getDoc(adminRef);
+        const adminDevQuery = query(collection(db, "Users", "adminDev", "AdminDevUsers"), where("email", "==", email));
+        const adminDevSnapshot = await getDocs(adminDevQuery);
 
-        if (adminDoc.exists()) {
-          const adminData = adminDoc.data();
-          if (adminData.email === email && adminData.password === password) {
+        adminDevSnapshot.forEach((doc) => {
+          const adminDevData = doc.data();
+          if (adminDevData.password === password) {
             userAuthenticated = true;
             localStorage.setItem('isAuthenticated', 'true');
-            navigate('/AdminDashboardPage');
+            localStorage.setItem('userType', 'AdminDev'); // Store user type
+            navigate('/DevelopersDashboardPage'); // Navigate to Developers dashboard
           }
-        }
+        });
       }
 
+      // If no authentication succeeded
       if (!userAuthenticated) {
         setError('Incorrect email or password.');
       }

@@ -47,7 +47,7 @@ function FacilityMessagePage() {
     <div className=" facility-message-page">
     <aside className="sidebar">
         <div className="logo-container">
-            <img src="/path-to-logo.png" alt="UnifiedCare Logo" className="logo" />
+            <img src="https://i.ytimg.com/vi/CYcrmsdZuyw/sddefault.jpg" alt="UnifiedCare Logo" className="logo" />
         </div>
         <nav className="menu">
                     <a href="#" className="menu-item" onClick={() => navigate('/AdminDashboardPage')}>Dashboard</a>
