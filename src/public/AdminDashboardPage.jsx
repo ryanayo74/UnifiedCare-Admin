@@ -18,7 +18,7 @@ function AdminDashboardPage() {
         <div className="dashboard-container">
             <aside className="sidebar">
                 <div className="logo-container">
-                    <img src="/path-to-logo.png" alt="UnifiedCare Logo" className="logo" />
+                    <img src="https://i.ytimg.com/vi/CYcrmsdZuyw/sddefault.jpg" alt="UnifiedCare Logo" className="logo" />
                 </div>
                 <nav className="menu">
                     <a href="#" className="menu-item">Dashboard</a>
@@ -26,7 +26,7 @@ function AdminDashboardPage() {
                     <a href="#" className="menu-item">Parents</a>
                     <a href="#" className="menu-item">Announcements</a>
                     <a href="#" className="menu-item">Approval</a>
-                    <a href="#" className="menu-item">Messages</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/FacilityMessagePage')}>Messages</a>
                 </nav>
                 <div className="logout">
                     {/* Attach the handleLogout function to the logout link */}

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import LandingPage from './public/LandingPage.jsx';
 import AdminLoginPage from './public/AdminLoginPage.jsx';
 import AdminDashboardPage from './public/AdminDashboardPage.jsx';
+import FacilityMessagePage from './public/FacilityMessagePage.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 
 export default function App() {
@@ -11,6 +12,18 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/AdminLoginPage" element={<AdminLoginPage />} />
+        
+        {/* Protecting FacilityMessagePage */}
+        <Route 
+          path="/FacilityMessagePage" 
+          element={
+            <ProtectedRoute>
+              <FacilityMessagePage />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Protecting AdminDashboardPage */}
         <Route 
           path="/AdminDashboardPage" 
           element={
