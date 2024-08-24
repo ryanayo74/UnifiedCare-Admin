@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, doc, getDoc, query, where } from "firebase/firestore"; 
+import { collection, getDocs, query, where } from "firebase/firestore"; 
 import '../css/AdminLoginPage.css';
-import { db } from '../config/firebase'; // Import your Firebase configuration
+import { db } from '../config/firebase';
 
 function AdminLoginPage() {
   const [email, setEmail] = useState('');
@@ -15,24 +15,22 @@ function AdminLoginPage() {
     setError('');
 
     try {
-      // Query for AdminFacility users
       const facilityQuery = query(collection(db, "Users", "facility", "newUserFacility"), where("email", "==", email));
       const facilitySnapshot = await getDocs(facilityQuery);
       
       let userAuthenticated = false;
       
-      // Check if any facility document matches the email and password
       facilitySnapshot.forEach((doc) => {
         const facilityData = doc.data();
         if (facilityData.password === password) {
           userAuthenticated = true;
           localStorage.setItem('isAuthenticated', 'true');
-          localStorage.setItem('userType', 'AdminFacility'); // Store user type
-          navigate('/AdminDashboardPage'); // Navigate to AdminFacility dashboard
+          localStorage.setItem('adminEmail', email); // Store the email
+          localStorage.setItem('userType', 'AdminFacility');
+          navigate('/AdminDashboardPage');
         }
       });
 
-      // If not authenticated with a facility, check AdminDev credentials
       if (!userAuthenticated) {
         const adminDevQuery = query(collection(db, "Users", "adminDev", "AdminDevUsers"), where("email", "==", email));
         const adminDevSnapshot = await getDocs(adminDevQuery);
@@ -42,13 +40,13 @@ function AdminLoginPage() {
           if (adminDevData.password === password) {
             userAuthenticated = true;
             localStorage.setItem('isAuthenticated', 'true');
-            localStorage.setItem('userType', 'AdminDev'); // Store user type
-            navigate('/DevelopersDashboardPage'); // Navigate to Developers dashboard
+            localStorage.setItem('adminEmail', email); // Store the email
+            localStorage.setItem('userType', 'AdminDev');
+            navigate('/DevelopersDashboardPage');
           }
         });
       }
 
-      // If no authentication succeeded
       if (!userAuthenticated) {
         setError('Incorrect email or password.');
       }
