@@ -14,7 +14,7 @@ function LandingPage() {
   }, []);
 
   const handleJoinUsClick = () => {
-    navigate('/messages'); // Redirect to AdminJoinUsPage
+    navigate('/ContactUsPage'); // Redirect to AdminJoinUsPage
   };
 
   const handleLoginClick = () => {

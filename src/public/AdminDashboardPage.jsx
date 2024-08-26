@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doc, getDoc } from "firebase/firestore";
-import { db } from '../config/firebase';
+import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from '../config/firebase';
 import '../css/AdminDashboardPage.css';
 
 function AdminDashboardPage() {
     const navigate = useNavigate();
     const [adminEmail, setAdminEmail] = useState('');
-    const [facilityName, setFacilityName] = useState('Sample Facility');
+    const [facilityName, setFacilityName] = useState('Facility');
+    const [facilityImage, setFacilityImage] = useState('/path-to-default-facility.jpg'); // Default image
     const [error, setError] = useState(null);
+    const [currentDocId, setCurrentDocId] = useState(null);
 
     useEffect(() => {
         // Fetch admin email from localStorage
@@ -21,22 +24,22 @@ function AdminDashboardPage() {
 
     const fetchFacilityData = async (email) => {
         try {
-            // Correct document path according to your Firestore structure
-            const docRef = doc(db, "Users", "facility", "newUserFacility", "sample2");
-            const docSnap = await getDoc(docRef);
-
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                if (data.email === email) { // Verify the email matches
-                    if (data.name) { // Use `data.name` instead of `data.facilityName` since your document has `name`
-                        setFacilityName(data.name);
-                    }
-                } else {
-                    console.error("Email does not match the document.");
-                    setError("Email does not match the document.");
+            // Query all documents in the 'userFacility' collection
+            const querySnapshot = await getDocs(collection(db, "Users", "facility", "userFacility"));
+            
+            let found = false;
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                if (data.email === email) {
+                    setFacilityName(data.name || 'Sample Facility'); // Update facility name
+                    setFacilityImage(data.image || '/path-to-default-facility.jpg'); // Update facility image
+                    setCurrentDocId(doc.id); // Save the document ID for future updates
+                    found = true;
                 }
-            } else {
-                console.error("No document found.");
+            });
+
+            if (!found) {
+                console.error("No document found with this email.");
                 setError("No document found with this email.");
             }
         } catch (error) {
@@ -45,14 +48,33 @@ function AdminDashboardPage() {
         }
     };
 
-    // Logout function
     const handleLogout = () => {
-        // Remove the authentication status and email from localStorage
         localStorage.removeItem('isAuthenticated');
         localStorage.removeItem('adminEmail');
-
-        // Redirect to the login page
         navigate('/AdminLoginPage');
+    };
+
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (file && currentDocId) { // Check if file is selected and currentDocId is available
+            const storageRef = ref(storage, `facilityImages/${file.name}`);
+            try {
+                await uploadBytes(storageRef, file);
+                const downloadURL = await getDownloadURL(storageRef);
+
+                const docRef = doc(db, "Users", "facility", "userFacility", currentDocId);
+                await updateDoc(docRef, { image: downloadURL });
+
+                setFacilityImage(downloadURL); // Update state with the new image URL
+                setError(null); // Clear any previous errors
+            } catch (error) {
+                console.error("Error uploading image:", error);
+                setError("Failed to upload the image. Please try again.");
+            }
+        } else if (!currentDocId) {
+            console.error("No valid document ID found.");
+            setError("No valid document ID found to update.");
+        }
     };
 
     return (
@@ -70,14 +92,27 @@ function AdminDashboardPage() {
                     <a href="#" className="menu-item" onClick={() => navigate('/FacilityMessagePage')}>Messages</a>
                 </nav>
                 <div className="logout">
-                    {/* Attach the handleLogout function to the logout link */}
                     <a href="#" onClick={handleLogout}>Logout</a>
                 </div>
             </aside>
             <main className="main-content">
                 <header className="header">
                     <div className="facility-info">
-                        <img src="/path-to-facility.jpg" alt="Facility" className="facility-img" />
+                        <img
+                            src={facilityImage}
+                            alt="Img"
+                            className="facility-img"
+                            onClick={() => document.getElementById('imageUpload').click()}
+                            style={{ cursor: 'pointer' }}
+                            onError={() => setFacilityImage('/path-to-default-facility.jpg')} // Fallback to default image on error
+                        />
+                        <input
+                            type="file"
+                            id="imageUpload"
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            onChange={handleImageUpload}
+                        />
                         <span>{facilityName}</span>
                         {error && <p className="error">{error}</p>}
                     </div>

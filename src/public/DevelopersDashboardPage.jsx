@@ -1,52 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doc, updateDoc, getDoc } from "firebase/firestore";
+import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../config/firebase';
 import '../css/AdminDashboardPage.css';
 
 function DevelopersDashboardPage() {
     const navigate = useNavigate();
-    const [profileImage, setProfileImage] = useState('/path-to-default-profile.jpg');
-    const [error, setError] = useState(null);
     const [adminEmail, setAdminEmail] = useState('');
-    const [documentName, setDocumentName] = useState(''); // Initialize as empty
+    const [developerName, setDeveloperName] = useState('Developer');
+    const [profileImage, setProfileImage] = useState('/path-to-default-profile.jpg'); // Default image
+    const [error, setError] = useState(null);
+    const [currentDocId, setCurrentDocId] = useState(null);
 
     useEffect(() => {
+        // Fetch admin email from localStorage
         const email = localStorage.getItem('adminEmail');
         if (email) {
             setAdminEmail(email);
-            fetchAdminData(email); // Fetch data including name and profile image
+            fetchDeveloperData(email);
         }
     }, []);
 
-    // Function to fetch admin data, including name and profile image
-    const fetchAdminData = async (email) => {
+    const fetchDeveloperData = async (email) => {
         try {
-            const docRef = doc(db, "Users", "adminDev", "AdminDevUsers", "Admin1");
-            const docSnap = await getDoc(docRef);
-
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                if (data.email === email) { // Check if the email matches
-                    if (data.profileImage) {
-                        setProfileImage(data.profileImage); // Set the fetched image URL
-                    }
-                    if (data.name) {
-                        setDocumentName(data.name); // Set the fetched name
-                    }
-                } else {
-                    console.error("Email does not match the document.");
-                    setError("Email does not match the document.");
+            // Query all documents in the 'AdminDevUsers' collection
+            const querySnapshot = await getDocs(collection(db, "Users", "adminDev", "AdminDevUsers"));
+            
+            let found = false;
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                if (data.email === email) {
+                    setDeveloperName(data.name || 'Sample Developer'); // Update developer name
+                    setProfileImage(data.profileImage || '/path-to-default-profile.jpg'); // Update profile image
+                    setCurrentDocId(doc.id); // Save the document ID for future updates
+                    found = true;
                 }
-            } else {
-                console.error("No document found with the name 'Admin1'.");
-                setError("No document found with the name 'Admin1'.");
-            }
+            });
 
+            if (!found) {
+                console.error("No document found with this email.");
+                setError("No document found with this email.");
+            }
         } catch (error) {
-            console.error("Error fetching admin data: ", error);
-            setError("Failed to fetch admin data.");
+            console.error("Error fetching developer data:", error);
+            setError("Failed to fetch developer data.");
         }
     };
 
@@ -58,30 +56,24 @@ function DevelopersDashboardPage() {
 
     const handleImageUpload = async (e) => {
         const file = e.target.files[0];
-        if (file) {
-            const storageRef = ref(storage, `AdminProfile/${file.name}`);
-
+        if (file && currentDocId) { // Check if file is selected and currentDocId is available
+            const storageRef = ref(storage, `developerProfiles/${file.name}`);
             try {
-                await uploadBytes(storageRef, file); // Upload image to Firebase Storage
-                const downloadURL = await getDownloadURL(storageRef); // Get the image download URL
+                await uploadBytes(storageRef, file);
+                const downloadURL = await getDownloadURL(storageRef);
 
-                // Directly update the 'Admin1' document with the new profile image URL
-                const docRef = doc(db, "Users", "adminDev", "AdminDevUsers", "Admin1");
-                const docSnap = await getDoc(docRef);
+                const docRef = doc(db, "Users", "adminDev", "AdminDevUsers", currentDocId);
+                await updateDoc(docRef, { profileImage: downloadURL });
 
-                if (docSnap.exists() && docSnap.data().email === adminEmail) { // Check if the email matches
-                    await updateDoc(docRef, { profileImage: downloadURL });
-
-                    setProfileImage(downloadURL); // Update state with new image URL
-                } else {
-                    console.error("Email does not match or document does not exist.");
-                    setError("Email does not match or document does not exist.");
-                }
-
+                setProfileImage(downloadURL); // Update state with the new image URL
+                setError(null); // Clear any previous errors
             } catch (error) {
-                console.error("Error uploading image: ", error);
+                console.error("Error uploading image:", error);
                 setError("Failed to upload the image. Please try again.");
             }
+        } else if (!currentDocId) {
+            console.error("No valid document ID found.");
+            setError("No valid document ID found to update.");
         }
     };
 
@@ -111,6 +103,7 @@ function DevelopersDashboardPage() {
                             className="facility-img"
                             onClick={() => document.getElementById('imageUpload').click()}
                             style={{ cursor: 'pointer' }}
+                            onError={() => setProfileImage('/path-to-default-profile.jpg')} // Fallback to default image on error
                         />
                         <input
                             type="file"
@@ -119,7 +112,7 @@ function DevelopersDashboardPage() {
                             style={{ display: 'none' }}
                             onChange={handleImageUpload}
                         />
-                        <span>{documentName || 'No Name Available'}</span> {/* Display name or fallback text */}
+                        <span>{developerName}</span>
                         {error && <p className="error">{error}</p>}
                     </div>
                 </header>

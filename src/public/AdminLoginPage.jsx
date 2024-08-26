@@ -15,10 +15,11 @@ function AdminLoginPage() {
     setError('');
 
     try {
-      const facilityQuery = query(collection(db, "Users", "facility", "newUserFacility"), where("email", "==", email));
-      const facilitySnapshot = await getDocs(facilityQuery);
-      
       let userAuthenticated = false;
+
+      // Query the userFacility collection for the given email
+      const facilityQuery = query(collection(db, "Users", "facility", "userFacility"), where("email", "==", email));
+      const facilitySnapshot = await getDocs(facilityQuery);
       
       facilitySnapshot.forEach((doc) => {
         const facilityData = doc.data();
@@ -32,6 +33,7 @@ function AdminLoginPage() {
       });
 
       if (!userAuthenticated) {
+        // Query the AdminDevUsers collection for the given email
         const adminDevQuery = query(collection(db, "Users", "adminDev", "AdminDevUsers"), where("email", "==", email));
         const adminDevSnapshot = await getDocs(adminDevQuery);
 
@@ -48,12 +50,29 @@ function AdminLoginPage() {
       }
 
       if (!userAuthenticated) {
+        // Query the newUserFacility collection for the given email
+        const newUserQuery = query(collection(db, "Users", "facility", "newUserFacility"), where("email", "==", email));
+        const newUserSnapshot = await getDocs(newUserQuery);
+
+        newUserSnapshot.forEach((doc) => {
+          const newUserFacilityData = doc.data();
+          if (newUserFacilityData.password === password) {
+            userAuthenticated = true;
+            localStorage.setItem('isAuthenticated', 'true');
+            localStorage.setItem('adminEmail', email); // Store the email
+            localStorage.setItem('userType', 'NewUserFacility');
+            navigate('/ChangePasswordPage');
+          }
+        });
+      }
+
+      if (!userAuthenticated) {
         setError('Incorrect email or password.');
       }
     } catch (error) {
       console.error("Error during login:", error);
       setError('Failed to log in. Please check your email and password.');
-    }    
+    }
   };
 
   return (
@@ -99,7 +118,7 @@ function AdminLoginPage() {
         </form>
       </div>
       <div className="login-image">
-        <img src="./assets/image.png" alt="Children" />
+        <img src="./assets/landingpagelogo.png" alt="Children" />
       </div>
     </div>
   );

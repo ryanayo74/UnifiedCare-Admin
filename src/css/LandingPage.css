@@ -73,6 +73,7 @@ main p {
   font-size: 34px;
   margin: 20px 0;
   font-family: sans-serif;
+  color: white
 }
 
 main button.register {
