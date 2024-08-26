@@ -9,7 +9,7 @@ function AdminDashboardPage() {
     const navigate = useNavigate();
     const [adminEmail, setAdminEmail] = useState('');
     const [facilityName, setFacilityName] = useState('Facility');
-    const [facilityImage, setFacilityImage] = useState('/path-to-default-facility.jpg'); // Default image
+    const [facilityImage, setFacilityImage] = useState('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png'); // Default image
     const [error, setError] = useState(null);
     const [currentDocId, setCurrentDocId] = useState(null);
 
@@ -100,7 +100,7 @@ function AdminDashboardPage() {
                     <div className="facility-info">
                         <img
                             src={facilityImage}
-                            alt="Img"
+                            alt=""
                             className="facility-img"
                             onClick={() => document.getElementById('imageUpload').click()}
                             style={{ cursor: 'pointer' }}
