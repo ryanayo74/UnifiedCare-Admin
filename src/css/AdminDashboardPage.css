@@ -1,5 +1,5 @@
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Arial', sans-serif;
     margin: 0;
     padding: 0;
     background-color: #f4f4f4;
@@ -8,10 +8,11 @@ body {
 .dashboard-container {
     display: flex;
     height: 100vh;
+    
 }
 
 .sidebar {
-    background-color: #2C3E50;
+    background-color: #0a1232; /* Dark blue */
     width: 250px;
     display: flex;
     flex-direction: column;
@@ -21,75 +22,112 @@ body {
 }
 
 .logo-container img {
-    width: 150px;
+    width: 100px; /* Adjusted for your desired size */
     margin-bottom: 20px;
 }
 
-.menu {
-    flex-grow: 1;
-}
-
 .menu-item {
-    display: block;
+    display: flex;
+    align-items: center;
     color: #fff;
     text-decoration: none;
     margin: 10px 0;
     padding: 10px;
     width: 100%;
-    text-align: center;
+    text-align: left;
     border-radius: 4px;
     transition: background-color 0.3s ease;
 }
 
 .menu-item:hover {
-    background-color: #34495E;
+    background-color: #1d2840;
+}
+
+.menu-item::before {
+    content: url('path/to/your/icon.png'); /* Replace with your icons */
+    margin-right: 10px;
 }
 
 .logout a {
     color: #fff;
     text-decoration: none;
+    display: flex;
+    align-items: center;
 }
 
 .main-content {
     flex-grow: 1;
     padding: 20px;
+    background-color: #fff;
 }
 
 .header {
     display: flex;
     justify-content: flex-end;
-    margin-bottom: 20px;
+    align-items: centerle;
+    padding: 10px 20px;
+    background-color: #fff;
+    border-bottom: 1px solid #ddd;
 }
 
 .facility-info {
     display: flex;
     align-items: center;
+    position: absolute; /* Position it relative to the parent container */
+    top: 10px; /* Position from the top */
+    right: 20px; /* Position from the right */
+}
+
+.facility-info span {
+    color: #000000;
+    font-size: large;
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
 }
 
 .facility-img {
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
+    border: 2px solid #ddd;
     margin-right: 10px;
 }
 
 .dashboard {
+    display: flex;
+    justify-content: center; /* Center content horizontally */
+    align-items: center; /* Center content vertically */
     background-color: #fff;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-.dashboard h1 {
-    font-size: 24px;
-    margin-bottom: 20px;
+    width: 130%; /* Ensure the dashboard takes full width */
+    height: calc(80vh - 10px); /* Adjust height to fill the screen, leaving space for header */
+    margin-top: 80px; /* Add margin-top to prevent overlap with header */
+    margin-left: 300px;
 }
 
 .user-stats {
-    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-left: 20px;
 }
 
 .user-stats p {
     font-size: 16px;
     margin: 5px 0;
+    color: #333;
+}
+
+.user-stats span {
+    font-size: 24px;
+    font-weight: bold;
+    color: #e74c3c;
+}
+
+.chart-container {
+    flex-grow: 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }

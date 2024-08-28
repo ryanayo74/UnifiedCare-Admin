@@ -1,29 +1,32 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
+// Public Pages
 import LandingPage from './public/LandingPage.jsx';
 import AdminLoginPage from './public/AdminLoginPage.jsx';
 import ContactUsPage from './public/ContactUsPage';
 import ChangePasswordPage from './public/ChangePasswordPage';
 
+// Admin Pages
 import DevelopersDashboardPage from './public/DevelopersDashboardPage.jsx';
-
 import AdminDashboardPage from './public/AdminDashboardPage.jsx';
 import FacilityMessagePage from './public/FacilityMessagePage.jsx';
+import TherapistListPage from './public/TherapistListPage.jsx';
 
+// Components
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 
 export default function App() {
   return (
     <Router>
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/AdminLoginPage" element={<AdminLoginPage />} />
         <Route path="/ChangePasswordPage" element={<ChangePasswordPage />} />
         <Route path="/ContactUsPage" element={<ContactUsPage />} />
         
-        
-        {/* Protecting FacilityMessagePage */}
+        {/* Protected Routes */}
         <Route 
           path="/FacilityMessagePage" 
           element={
@@ -32,8 +35,6 @@ export default function App() {
             </ProtectedRoute>
           } 
         />
-
-        {/* Protecting AdminDashboardPage */}
         <Route 
           path="/AdminDashboardPage" 
           element={
@@ -42,9 +43,7 @@ export default function App() {
             </ProtectedRoute>
           } 
         />
-
-         {/* Protecting DevelopersDashboardPage */}
-         <Route 
+        <Route 
           path="/DevelopersDashboardPage" 
           element={
             <ProtectedRoute>
@@ -52,7 +51,14 @@ export default function App() {
             </ProtectedRoute>
           } 
         />
-        
+        <Route 
+          path="/TherapistListPage" 
+          element={
+            <ProtectedRoute>
+              <TherapistListPage />
+            </ProtectedRoute>
+          } 
+        />
       </Routes>
     </Router>
   );

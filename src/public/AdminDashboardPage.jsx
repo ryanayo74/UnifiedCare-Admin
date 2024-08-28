@@ -3,7 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../config/firebase';
+import { Bar } from 'react-chartjs-2';  // Import the Bar component from react-chartjs-2
 import '../css/AdminDashboardPage.css';
+
+// Import necessary modules from chart.js
+import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Legend, Tooltip } from 'chart.js';
+ChartJS.register(BarElement, CategoryScale, LinearScale, Legend, Tooltip);
 
 function AdminDashboardPage() {
     const navigate = useNavigate();
@@ -12,6 +17,9 @@ function AdminDashboardPage() {
     const [facilityImage, setFacilityImage] = useState('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png'); // Default image
     const [error, setError] = useState(null);
     const [currentDocId, setCurrentDocId] = useState(null);
+    const [totalUsers, setTotalUsers] = useState(0);
+    const [therapistUsers, setTherapistUsers] = useState(0);
+    const [parentUsers, setParentUsers] = useState(0);
 
     useEffect(() => {
         // Fetch admin email from localStorage
@@ -20,6 +28,9 @@ function AdminDashboardPage() {
             setAdminEmail(email);
             fetchFacilityData(email);
         }
+        
+        // Fetch user data from Firestore
+        fetchUserData();
     }, []);
 
     const fetchFacilityData = async (email) => {
@@ -45,6 +56,23 @@ function AdminDashboardPage() {
         } catch (error) {
             console.error("Error fetching facility data:", error);
             setError("Failed to fetch facility data.");
+        }
+    };
+
+    const fetchUserData = async () => {
+        try {
+            const therapistSnapshot = await getDocs(collection(db, "Users", "therapists","newUserTherapist"));
+            const parentSnapshot = await getDocs(collection(db, "Users", "parents","newUserParent"));
+
+            const therapistCount = therapistSnapshot.size;
+            const parentCount = parentSnapshot.size;
+
+            setTherapistUsers(therapistCount);
+            setParentUsers(parentCount);
+            setTotalUsers(therapistCount + parentCount);
+        } catch (error) {
+            console.error("Error fetching user data:", error);
+            setError("Failed to fetch user data.");
         }
     };
 
@@ -77,6 +105,37 @@ function AdminDashboardPage() {
         }
     };
 
+    // Bar chart data and options
+    const data = {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+        datasets: [
+            {
+                label: 'Parents',
+                data: [5, 10, 15, 20, 25], // Replace with actual data
+                backgroundColor: 'blue'
+            },
+            {
+                label: 'Therapist',
+                data: [5, 7, 13, 18, 22], // Replace with actual data
+                backgroundColor: 'red'
+            }
+        ]
+    };
+
+    const options = {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom',
+            },
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    };
+
     return (
         <div className="dashboard-container">
             <aside className="sidebar">
@@ -85,7 +144,7 @@ function AdminDashboardPage() {
                 </div>
                 <nav className="menu">
                     <a href="#" className="menu-item">Dashboard</a>
-                    <a href="#" className="menu-item">Therapist</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/TherapistListPage')}>Therapist</a>
                     <a href="#" className="menu-item">Parents</a>
                     <a href="#" className="menu-item">Announcements</a>
                     <a href="#" className="menu-item">Approval</a>
@@ -96,7 +155,7 @@ function AdminDashboardPage() {
                 </div>
             </aside>
             <main className="main-content">
-                <header className="header">
+              
                     <div className="facility-info">
                         <img
                             src={facilityImage}
@@ -116,14 +175,15 @@ function AdminDashboardPage() {
                         <span>{facilityName}</span>
                         {error && <p className="error">{error}</p>}
                     </div>
-                </header>
+            
                 <section className="dashboard">
-                    <h1>Users</h1>
-                    <canvas id="userChart"></canvas>
+                    <div className="chart-container">
+                        <Bar data={data} options={options} />
+                    </div>
                     <div className="user-stats">
-                        <p>Total Users: <span>35</span></p>
-                        <p>Therapist Users: <span>12</span></p>
-                        <p>Parent Users: <span>23</span></p>
+                        <p>Total users: <span>{totalUsers}</span></p>
+                        <p>Therapist users: <span>{therapistUsers}</span></p>
+                        <p>Parent users: <span>{parentUsers}</span></p>
                         <p>Average Session Duration: <span>3m 12s</span></p>
                     </div>
                 </section>
