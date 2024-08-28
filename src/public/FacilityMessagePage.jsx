@@ -61,7 +61,7 @@ function FacilityMessagePage() {
                     {/* Attach the handleLogout function to the logout link */}
                     <a href="#" onClick={handleLogout}>Logout</a>
                 </div>
-      </aside>
+    </aside>
       <main className="main-content">
         <header className="main-header">
           <h2>Messages</h2>

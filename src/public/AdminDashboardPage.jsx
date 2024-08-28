@@ -3,10 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../config/firebase';
-import { Bar } from 'react-chartjs-2';  // Import the Bar component from react-chartjs-2
+import { Bar } from 'react-chartjs-2';
 import '../css/AdminDashboardPage.css';
 
-// Import necessary modules from chart.js
 import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Legend, Tooltip } from 'chart.js';
 ChartJS.register(BarElement, CategoryScale, LinearScale, Legend, Tooltip);
 
@@ -17,9 +16,12 @@ function AdminDashboardPage() {
     const [facilityImage, setFacilityImage] = useState('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png'); // Default image
     const [error, setError] = useState(null);
     const [currentDocId, setCurrentDocId] = useState(null);
+
     const [totalUsers, setTotalUsers] = useState(0);
     const [therapistUsers, setTherapistUsers] = useState(0);
     const [parentUsers, setParentUsers] = useState(0);
+    const [parentData, setParentData] = useState([0, 0, 0, 0, 0]);
+    const [therapistData, setTherapistData] = useState([0, 0, 0, 0, 0]);
 
     useEffect(() => {
         // Fetch admin email from localStorage
@@ -33,18 +35,43 @@ function AdminDashboardPage() {
         fetchUserData();
     }, []);
 
+
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (file && currentDocId) {
+            const storageRef = ref(storage, `facilityImages/${file.name}`);
+            try {
+                await uploadBytes(storageRef, file);
+                const downloadURL = await getDownloadURL(storageRef);
+
+                const docRef = doc(db, "Users", "facility", "userFacility", currentDocId);
+                await updateDoc(docRef, { image: downloadURL });
+
+                setFacilityImage(downloadURL); 
+                setError(null); 
+            } catch (error) {
+                console.error("Error uploading image:", error);
+                setError("Failed to upload the image. Please try again.");
+            }
+        } else if (!currentDocId) {
+            console.error("No valid document ID found.");
+            setError("No valid document ID found to update.");
+        }
+    };
+
+    
+
+
     const fetchFacilityData = async (email) => {
         try {
-            // Query all documents in the 'userFacility' collection
             const querySnapshot = await getDocs(collection(db, "Users", "facility", "userFacility"));
-            
             let found = false;
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
                 if (data.email === email) {
-                    setFacilityName(data.name || 'Sample Facility'); // Update facility name
-                    setFacilityImage(data.image || '/path-to-default-facility.jpg'); // Update facility image
-                    setCurrentDocId(doc.id); // Save the document ID for future updates
+                    setFacilityName(data.name || 'Sample Facility'); 
+                    setFacilityImage(data.image || '/path-to-default-facility.jpg'); 
+                    setCurrentDocId(doc.id); 
                     found = true;
                 }
             });
@@ -61,66 +88,76 @@ function AdminDashboardPage() {
 
     const fetchUserData = async () => {
         try {
-            const therapistSnapshot = await getDocs(collection(db, "Users", "therapists","newUserTherapist"));
-            const parentSnapshot = await getDocs(collection(db, "Users", "parents","newUserParent"));
-
+            const therapistSnapshot = await getDocs(collection(db, "Users", "therapists", "newUserTherapist"));
+            const parentSnapshot = await getDocs(collection(db, "Users", "parents", "newUserParent"));
+    
             const therapistCount = therapistSnapshot.size;
             const parentCount = parentSnapshot.size;
-
+    
             setTherapistUsers(therapistCount);
             setParentUsers(parentCount);
             setTotalUsers(therapistCount + parentCount);
+    
+            // Processing data for bar chart
+            const parentCountByMonth = [0, 0, 0, 0, 0];
+            parentSnapshot.forEach(doc => {
+                const userData = doc.data();
+                if (userData.createdAt) {
+                    const userDate = userData.createdAt.toDate();
+                    const month = userDate.getMonth();
+    
+                    if (month >= 0 && month < 5) {
+                        parentCountByMonth[month]++;
+                    }
+                } else {
+                    console.warn("Parent Document missing 'createdAt':", doc.id);
+                }
+            });
+    
+            const therapistCountByMonth = [0, 0, 0, 0, 0];
+            therapistSnapshot.forEach(doc => {
+                const userData = doc.data();
+                if (userData.createdAt) {
+                    const userDate = userData.createdAt.toDate();
+                    const month = userDate.getMonth();
+    
+                    if (month >= 0 && month < 5) {
+                        therapistCountByMonth[month]++;
+                    }
+                } else {
+                    console.warn("Therapist Document missing 'createdAt':", doc.id);
+                }
+            });
+    
+            console.log('Parent Data by Month:', parentCountByMonth);
+            console.log('Therapist Data by Month:', therapistCountByMonth);
+    
+            setParentData(parentCountByMonth);
+            setTherapistData(therapistCountByMonth);
+    
         } catch (error) {
             console.error("Error fetching user data:", error);
             setError("Failed to fetch user data.");
         }
-    };
-
-    const handleLogout = () => {
-        localStorage.removeItem('isAuthenticated');
-        localStorage.removeItem('adminEmail');
-        navigate('/AdminLoginPage');
-    };
-
-    const handleImageUpload = async (e) => {
-        const file = e.target.files[0];
-        if (file && currentDocId) { // Check if file is selected and currentDocId is available
-            const storageRef = ref(storage, `facilityImages/${file.name}`);
-            try {
-                await uploadBytes(storageRef, file);
-                const downloadURL = await getDownloadURL(storageRef);
-
-                const docRef = doc(db, "Users", "facility", "userFacility", currentDocId);
-                await updateDoc(docRef, { image: downloadURL });
-
-                setFacilityImage(downloadURL); // Update state with the new image URL
-                setError(null); // Clear any previous errors
-            } catch (error) {
-                console.error("Error uploading image:", error);
-                setError("Failed to upload the image. Please try again.");
-            }
-        } else if (!currentDocId) {
-            console.error("No valid document ID found.");
-            setError("No valid document ID found to update.");
-        }
-    };
-
+    };    
+   
     // Bar chart data and options
     const data = {
         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
         datasets: [
             {
                 label: 'Parents',
-                data: [5, 10, 15, 20, 25], // Replace with actual data
+                data: parentData, // Dynamic data for parents
                 backgroundColor: 'blue'
             },
             {
                 label: 'Therapist',
-                data: [5, 7, 13, 18, 22], // Replace with actual data
+                data: therapistData, // Dynamic data for therapists
                 backgroundColor: 'red'
             }
         ]
     };
+    
 
     const options = {
         responsive: true,
@@ -135,6 +172,13 @@ function AdminDashboardPage() {
             }
         }
     };
+
+    const handleLogout = () => {
+        localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('adminEmail');
+        navigate('/AdminLoginPage');
+    };
+
 
     return (
         <div className="dashboard-container">
@@ -155,27 +199,25 @@ function AdminDashboardPage() {
                 </div>
             </aside>
             <main className="main-content">
-              
-                    <div className="facility-info">
-                        <img
-                            src={facilityImage}
-                            alt=""
-                            className="facility-img"
-                            onClick={() => document.getElementById('imageUpload').click()}
-                            style={{ cursor: 'pointer' }}
-                            onError={() => setFacilityImage('/path-to-default-facility.jpg')} // Fallback to default image on error
-                        />
-                        <input
-                            type="file"
-                            id="imageUpload"
-                            accept="image/*"
-                            style={{ display: 'none' }}
-                            onChange={handleImageUpload}
-                        />
-                        <span>{facilityName}</span>
-                        {error && <p className="error">{error}</p>}
-                    </div>
-            
+                <div className="facility-info">
+                    <img
+                        src={facilityImage}
+                        alt=""
+                        className="facility-img"
+                        onClick={() => document.getElementById('imageUpload').click()}
+                        style={{ cursor: 'pointer' }}
+                        onError={() => setFacilityImage('/path-to-default-facility.jpg')} 
+                    />
+                    <input
+                        type="file"
+                        id="imageUpload"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={handleImageUpload}
+                    />
+                    <span>{facilityName}</span>
+                    {error && <p className="error">{error}</p>}
+                </div>
                 <section className="dashboard">
                     <div className="chart-container">
                         <Bar data={data} options={options} />
