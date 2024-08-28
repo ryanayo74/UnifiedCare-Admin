@@ -61,7 +61,7 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-npm start
+npm run dev
 
 
 ### Key Sections to Update
