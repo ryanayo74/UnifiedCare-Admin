@@ -12,6 +12,7 @@ import DevelopersDashboardPage from './public/DevelopersDashboardPage.jsx';
 import AdminDashboardPage from './public/AdminDashboardPage.jsx';
 import FacilityMessagePage from './public/FacilityMessagePage.jsx';
 import TherapistListPage from './public/TherapistListPage.jsx';
+import AdminParentsListPage from './public/AdminParentsListPage.jsx';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute.jsx';
@@ -51,11 +52,21 @@ export default function App() {
             </ProtectedRoute>
           } 
         />
+
         <Route 
           path="/TherapistListPage" 
           element={
             <ProtectedRoute>
               <TherapistListPage />
+            </ProtectedRoute>
+          } 
+        />
+
+<Route 
+          path="/AdminParentsListPage" 
+          element={
+            <ProtectedRoute>
+              <AdminParentsListPage />
             </ProtectedRoute>
           } 
         />

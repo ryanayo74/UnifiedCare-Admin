@@ -51,8 +51,9 @@ function FacilityMessagePage() {
         </div>
         <nav className="menu">
                     <a href="#" className="menu-item" onClick={() => navigate('/AdminDashboardPage')}>Dashboard</a>
-                    <a href="#" className="menu-item">Therapist</a>
-                    <a href="#" className="menu-item">Parents</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/AdminDashboardPage')}>Dashboard</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/TherapistListPage')}>Therapist</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/AdminParentsListPage')}>Parents</a>
                     <a href="#" className="menu-item">Announcements</a>
                     <a href="#" className="menu-item">Approval</a>
                     <a href="#" className="menu-item" onClick={() => navigate('/FacilityMessagePage')}>Messages</a>

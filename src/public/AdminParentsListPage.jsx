@@ -3,16 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../config/firebase';
-import '../css/TherapistListPage.css';
+import '../css/AdminParentsListPage.css';
 
-export default function TherapistListPage() {
+export default function AdminParentsListPage() {
   const navigate = useNavigate();
   const [adminEmail, setAdminEmail] = useState('');
   const [facilityName, setFacilityName] = useState('Facility');
   const [facilityImage, setFacilityImage] = useState('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png'); // Default image
   const [error, setError] = useState(null);
   const [currentDocId, setCurrentDocId] = useState(null);
-  const [therapists, setTherapists] = useState([]); // State to hold fetched therapist data
+  const [parents, setParents] = useState([]);
 
   useEffect(() => {
     const email = localStorage.getItem('adminEmail');
@@ -21,7 +21,7 @@ export default function TherapistListPage() {
       fetchFacilityData(email);
     }
 
-    fetchTherapists(); // Fetch therapists when component mounts
+    fetchParents();
   }, []);
 
   const handleImageUpload = async (e) => {
@@ -69,17 +69,17 @@ export default function TherapistListPage() {
     }
   };
 
-  const fetchTherapists = async () => {
+  const fetchParents = async () => {
     try {
-      const therapistSnapshot = await getDocs(collection(db, "Users", "therapists", "newUserTherapist"));
-      const fetchedTherapists = [];
-      therapistSnapshot.forEach((doc) => {
-        fetchedTherapists.push(doc.data());
+      const parentsSnapshot = await getDocs(collection(db, "Users", "parents", "newUserParent"));
+      const fetchedParents = [];
+      parentsSnapshot.forEach((doc) => {
+        fetchedParents.push(doc.data());
       });
-      setTherapists(fetchedTherapists);
+      setParents(fetchedParents);
     } catch (error) {
-      console.error("Error fetching therapist data:", error);
-      setError("Failed to fetch therapist data.");
+      console.error("Error fetching parents data:", error);
+      setError("Failed to fetch parents data.");
     }
   };
 
@@ -102,7 +102,7 @@ export default function TherapistListPage() {
           <a href="#" className="menu-item">Announcements</a>
           <a href="#" className="menu-item">Approval</a>
           <a href="#" className="menu-item" onClick={() => navigate('/FacilityMessagePage')}>Messages</a>
-                </nav>
+        </nav>
         <div className="logout">
           <a href="#" onClick={handleLogout}>Logout</a>
         </div>
@@ -128,7 +128,7 @@ export default function TherapistListPage() {
           {error && <p className="error">{error}</p>}
         </div>
         <div className="header">
-          <h2>Therapist List</h2>
+          <h2>Parents List</h2>
           <div className="actions">
             <button className="btn-add">ADD</button>
             <button className="btn-edit">EDIT</button>
@@ -137,28 +137,26 @@ export default function TherapistListPage() {
         <table className="therapist-table">
           <thead>
             <tr>
-              <th>Therapist Name</th>
+              <th>Parent Name</th>
               <th>Email</th>
               <th>Phone Number</th>
-              <th>Qualification</th>
+              <th>Therapy Type</th>
               <th>Details</th>
             </tr>
           </thead>
           <tbody>
-          {therapists.map((therapist, index) => (
-            <tr key={index}>
-              <td>{therapist.firstName + ' ' + therapist.lastName}</td> {/* Corrected line */}
-              <td>{therapist.email}</td>
-              <td>{therapist.phoneNumber}</td>
-              <td>{therapist.therapyType}</td>
-              <td><a href={`/therapist/${index}`}>View</a></td>
-            </tr>
-          ))}
-        </tbody>
+            {parents.map((parent, index) => (
+              <tr key={index}>
+                <td>{parent.parentDetails.firstName} {parent.parentDetails.lastName}</td>
+                <td>{parent.parentDetails?.email}</td>
+                <td>{parent.parentDetails?.phone}</td>
+                <td>{parent.childDetails?.therapyType}</td>
+                <td><a href={`/parents/${index}`}>View</a></td>
+              </tr>
+            ))}
+          </tbody>
         </table>
       </main>
     </div>
   );
 }
-
-  
