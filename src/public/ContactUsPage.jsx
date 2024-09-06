@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { collection, addDoc } from "firebase/firestore";
+import { db } from '../config/firebase'; // Make sure to adjust the path
 import '../css/ContactUsPage.css'; // Import the corresponding CSS file
 
 function ContactUsPage() {
@@ -7,12 +9,12 @@ function ContactUsPage() {
     const navigate = useNavigate();
 
     const handleLoginClick = () => {
-        navigate('/AdminLoginPage'); // Redirect to FacilityMessagePage
-      };
+        navigate('/AdminLoginPage');
+    };
 
     const handleHomeClick = () => {
-        navigate('/'); // Redirect to FacilityMessagePage
-      };
+        navigate('/');
+    };
 
     const [formData, setFormData] = useState({
         name: '',
@@ -25,26 +27,48 @@ function ContactUsPage() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Handle form submission (e.g., send data to a backend)
-        console.log(formData);
+
+        try {
+            // Save the formData to Firestore under "Users" > "facility" > "pending"
+            const docRef = await addDoc(collection(db, "Users", "adminDev", "pending"), {
+                name: formData.name,
+                email: formData.email,
+                phoneNumber: formData.phoneNumber,
+                message: formData.message,
+                createdAt: new Date() // Timestamp
+            });
+            console.log("Document written with ID: ", docRef.id);
+
+            // Reset the form after successful submission
+            setFormData({
+                name: '',
+                email: '',
+                phoneNumber: '',
+                message: ''
+            });
+
+            alert('Your message has been submitted successfully!');
+
+        } catch (error) {
+            console.error("Error adding document: ", error);
+            alert('There was an error submitting your message. Please try again.');
+        }
     };
-
-
 
     return (
         <div className="contact-us-container">
-          <header>
-        <div className="logo-container">
-          <div className="logo-text">UnifiedCare</div>
-        </div>
-        <nav>
-          <a href="#" className="home" onClick={handleHomeClick}> Home</a>
-          <a href="#">About Us</a>
-          <a href="#" className="login" onClick={handleLoginClick}> Log in</a>
-        </nav>
-         </header>
+            <header>
+                <div className="logo-container">
+                    <div className="logo-text">UnifiedCare</div>
+                </div>
+                <nav>
+                    <a href="#" className="home" onClick={handleHomeClick}> Home</a>
+                    <a href="#">About Us</a>
+                    <a href="#" className="login" onClick={handleLoginClick}> Log in</a>
+                </nav>
+            </header>
 
             <div className="contact-form-container">
                 <form className="contact-form" onSubmit={handleSubmit}>

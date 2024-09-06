@@ -13,28 +13,67 @@ function AdminDashboardPage() {
     const navigate = useNavigate();
     const [adminEmail, setAdminEmail] = useState('');
     const [facilityName, setFacilityName] = useState('Facility');
-    const [facilityImage, setFacilityImage] = useState('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png'); // Default image
+    const [facilityImage, setFacilityImage] = useState('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png');
     const [error, setError] = useState(null);
     const [currentDocId, setCurrentDocId] = useState(null);
 
     const [totalUsers, setTotalUsers] = useState(0);
     const [therapistUsers, setTherapistUsers] = useState(0);
     const [parentUsers, setParentUsers] = useState(0);
-    const [parentData, setParentData] = useState([0, 0, 0, 0, 0]);
-    const [therapistData, setTherapistData] = useState([0, 0, 0, 0, 0]);
+    const [parentData, setParentData] = useState(new Array(12).fill(0)); // Data for all 12 months
+    const [therapistData, setTherapistData] = useState(new Array(12).fill(0)); // Data for all 12 months
+
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+    const [years, setYears] = useState([]); // List of years for the dropdown
 
     useEffect(() => {
-        // Fetch admin email from localStorage
         const email = localStorage.getItem('adminEmail');
         if (email) {
             setAdminEmail(email);
             fetchFacilityData(email);
         }
-        
-        // Fetch user data from Firestore
-        fetchUserData();
+        fetchYears(); // Fetch the years when users were created
     }, []);
 
+    useEffect(() => {
+        if (years.length > 0) {
+            fetchUserData(selectedYear); // Fetch data for the selected year
+        }
+    }, [selectedYear, years]);
+
+    const fetchYears = async () => {
+        try {
+            const therapistSnapshot = await getDocs(collection(db, "Users", "therapists", "newUserTherapist"));
+            const parentSnapshot = await getDocs(collection(db, "Users", "parents", "newUserParent"));
+
+            const yearSet = new Set();
+
+            therapistSnapshot.forEach(doc => {
+                const userData = doc.data();
+                if (userData.createdAt) {
+                    const year = userData.createdAt.toDate().getFullYear();
+                    yearSet.add(year);
+                }
+            });
+
+            parentSnapshot.forEach(doc => {
+                const userData = doc.data();
+                if (userData.createdAt) {
+                    const year = userData.createdAt.toDate().getFullYear();
+                    yearSet.add(year);
+                }
+            });
+
+            const yearArray = Array.from(yearSet).sort((a, b) => a - b);
+            setYears(yearArray);
+            if (!yearArray.includes(selectedYear)) {
+                setSelectedYear(yearArray[0]); // Set the default selected year to the earliest year if the current year is not in the list
+            }
+        } catch (error) {
+            console.error("Error fetching years:", error);
+            setError("Failed to fetch years.");
+        }
+    };
 
     const handleImageUpload = async (e) => {
         const file = e.target.files[0];
@@ -43,12 +82,11 @@ function AdminDashboardPage() {
             try {
                 await uploadBytes(storageRef, file);
                 const downloadURL = await getDownloadURL(storageRef);
-
                 const docRef = doc(db, "Users", "facility", "userFacility", currentDocId);
                 await updateDoc(docRef, { image: downloadURL });
 
-                setFacilityImage(downloadURL); 
-                setError(null); 
+                setFacilityImage(downloadURL);
+                setError(null);
             } catch (error) {
                 console.error("Error uploading image:", error);
                 setError("Failed to upload the image. Please try again.");
@@ -59,9 +97,6 @@ function AdminDashboardPage() {
         }
     };
 
-    
-
-
     const fetchFacilityData = async (email) => {
         try {
             const querySnapshot = await getDocs(collection(db, "Users", "facility", "userFacility"));
@@ -69,9 +104,9 @@ function AdminDashboardPage() {
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
                 if (data.email === email) {
-                    setFacilityName(data.name || 'Sample Facility'); 
-                    setFacilityImage(data.image || '/path-to-default-facility.jpg'); 
-                    setCurrentDocId(doc.id); 
+                    setFacilityName(data.name || 'Sample Facility');
+                    setFacilityImage(data.image || '/path-to-default-facility.jpg');
+                    setCurrentDocId(doc.id);
                     found = true;
                 }
             });
@@ -86,78 +121,74 @@ function AdminDashboardPage() {
         }
     };
 
-    const fetchUserData = async () => {
+    const fetchUserData = async (year) => {
         try {
             const therapistSnapshot = await getDocs(collection(db, "Users", "therapists", "newUserTherapist"));
             const parentSnapshot = await getDocs(collection(db, "Users", "parents", "newUserParent"));
-    
+
             const therapistCount = therapistSnapshot.size;
             const parentCount = parentSnapshot.size;
-    
+
             setTherapistUsers(therapistCount);
             setParentUsers(parentCount);
             setTotalUsers(therapistCount + parentCount);
-    
-            // Processing data for bar chart
-            const parentCountByMonth = [0, 0, 0, 0, 0];
+
+            const parentCountByMonth = new Array(12).fill(0);
             parentSnapshot.forEach(doc => {
                 const userData = doc.data();
                 if (userData.createdAt) {
                     const userDate = userData.createdAt.toDate();
-                    const month = userDate.getMonth();
-    
-                    if (month >= 0 && month < 5) {
+                    if (userDate.getFullYear() === year) {
+                        const month = userDate.getMonth();
                         parentCountByMonth[month]++;
                     }
                 } else {
                     console.warn("Parent Document missing 'createdAt':", doc.id);
                 }
             });
-    
-            const therapistCountByMonth = [0, 0, 0, 0, 0];
+
+            const therapistCountByMonth = new Array(12).fill(0);
             therapistSnapshot.forEach(doc => {
                 const userData = doc.data();
                 if (userData.createdAt) {
                     const userDate = userData.createdAt.toDate();
-                    const month = userDate.getMonth();
-    
-                    if (month >= 0 && month < 5) {
+                    if (userDate.getFullYear() === year) {
+                        const month = userDate.getMonth();
                         therapistCountByMonth[month]++;
                     }
                 } else {
                     console.warn("Therapist Document missing 'createdAt':", doc.id);
                 }
             });
-    
-            console.log('Parent Data by Month:', parentCountByMonth);
-            console.log('Therapist Data by Month:', therapistCountByMonth);
-    
+
             setParentData(parentCountByMonth);
             setTherapistData(therapistCountByMonth);
-    
         } catch (error) {
             console.error("Error fetching user data:", error);
             setError("Failed to fetch user data.");
         }
-    };    
-   
+    };
+
+    const handleYearChange = (event) => {
+        setSelectedYear(Number(event.target.value));
+    };
+
     // Bar chart data and options
     const data = {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
         datasets: [
             {
                 label: 'Parents',
-                data: parentData, // Dynamic data for parents
+                data: parentData,
                 backgroundColor: 'blue'
             },
             {
                 label: 'Therapist',
-                data: therapistData, // Dynamic data for therapists
+                data: therapistData,
                 backgroundColor: 'red'
             }
         ]
     };
-    
 
     const options = {
         responsive: true,
@@ -178,7 +209,6 @@ function AdminDashboardPage() {
         localStorage.removeItem('adminEmail');
         navigate('/AdminLoginPage');
     };
-
 
     return (
         <div className="dashboard-container">
@@ -219,6 +249,14 @@ function AdminDashboardPage() {
                     {error && <p className="error">{error}</p>}
                 </div>
                 <section className="dashboard">
+                    <div className="year-selector">
+                        <label htmlFor="year">Select Year:</label>
+                        <select id="year" value={selectedYear} onChange={handleYearChange}>
+                            {years.map(year => (
+                                <option key={year} value={year}>{year}</option>
+                            ))}
+                        </select>
+                    </div>
                     <div className="chart-container">
                         <Bar data={data} options={options} />
                     </div>
