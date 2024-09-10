@@ -17,6 +17,8 @@ function AdminDashboardPage() {
     const [error, setError] = useState(null);
     const [currentDocId, setCurrentDocId] = useState(null);
 
+    const [showModal, setShowModal] = useState(false); // State for modal visibility
+
     const [totalUsers, setTotalUsers] = useState(0);
     const [therapistUsers, setTherapistUsers] = useState(0);
     const [parentUsers, setParentUsers] = useState(0);
@@ -173,41 +175,14 @@ function AdminDashboardPage() {
         setSelectedYear(Number(event.target.value));
     };
 
-    // Bar chart data and options
-    const data = {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-        datasets: [
-            {
-                label: 'Parents',
-                data: parentData,
-                backgroundColor: 'blue'
-            },
-            {
-                label: 'Therapist',
-                data: therapistData,
-                backgroundColor: 'red'
-            }
-        ]
+    // Show modal when the image is clicked
+    const handleImageClick = () => {
+        setShowModal(true); // Show the modal
     };
 
-    const options = {
-        responsive: true,
-        plugins: {
-            legend: {
-                position: 'bottom',
-            },
-        },
-        scales: {
-            y: {
-                beginAtZero: true
-            }
-        }
-    };
-
-    const handleLogout = () => {
-        localStorage.removeItem('isAuthenticated');
-        localStorage.removeItem('adminEmail');
-        navigate('/AdminLoginPage');
+    // Close the modal
+    const closeModal = () => {
+        setShowModal(false); // Hide the modal
     };
 
     return (
@@ -234,40 +209,59 @@ function AdminDashboardPage() {
                         src={facilityImage}
                         alt=""
                         className="facility-img"
-                        onClick={() => document.getElementById('imageUpload').click()}
-                        style={{ cursor: 'pointer' }}
-                        onError={() => setFacilityImage('/path-to-default-facility.jpg')} 
+                        onClick={handleImageClick} // Show modal on image click
+                        style={{ cursor: 'pointer' }} // Makes the image clickable
                     />
-                    <input
-                        type="file"
-                        id="imageUpload"
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                        onChange={handleImageUpload}
-                    />
-                    <span>{facilityName}</span>
-                    {error && <p className="error">{error}</p>}
+                    <h2>{facilityName}</h2>
+                    <div>
+                        <input type="file" onChange={handleImageUpload} />
+                    </div>
                 </div>
-                <section className="dashboard">
-                    <div className="year-selector">
-                        <label htmlFor="year">Select Year:</label>
-                        <select id="year" value={selectedYear} onChange={handleYearChange}>
-                            {years.map(year => (
-                                <option key={year} value={year}>{year}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="chart-container">
-                        <Bar data={data} options={options} />
-                    </div>
-                    <div className="user-stats">
-                        <p>Total users: <span>{totalUsers}</span></p>
-                        <p>Therapist users: <span>{therapistUsers}</span></p>
-                        <p>Parent users: <span>{parentUsers}</span></p>
-                        <p>Average Session Duration: <span>3m 12s</span></p>
-                    </div>
-                </section>
+
+                <div className="year-selector">
+                    <label htmlFor="year-select">Select Year:</label>
+                    <select id="year-select" value={selectedYear} onChange={handleYearChange}>
+                        {years.map((year) => (
+                            <option key={year} value={year}>
+                                {year}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="user-statistics">
+                    <Bar
+                        data={{
+                            labels: [
+                                "January", "February", "March", "April", "May", "June",
+                                "July", "August", "September", "October", "November", "December"
+                            ],
+                            datasets: [
+                                {
+                                    label: "Parents",
+                                    data: parentData,
+                                    backgroundColor: "rgba(255, 99, 132, 0.5)",
+                                },
+                                {
+                                    label: "Therapists",
+                                    data: therapistData,
+                                    backgroundColor: "rgba(53, 162, 235, 0.5)",
+                                }
+                            ]
+                        }}
+                    />
+                </div>
             </main>
+
+            {/* Modal for image preview */}
+            {showModal && (
+                <div className="modal" onClick={closeModal}>
+                    <div className="modal-content">
+                        <span className="close-button" onClick={closeModal}>&times;</span>
+                        <img src={facilityImage} alt="Facility" className="modal-img" />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

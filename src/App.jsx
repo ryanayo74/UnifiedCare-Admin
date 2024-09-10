@@ -7,8 +7,14 @@ import AdminLoginPage from './public/AdminLoginPage.jsx';
 import ContactUsPage from './public/ContactUsPage';
 import ChangePasswordPage from './public/ChangePasswordPage';
 
-// Admin Pages
+// Admin Developers Pages
+import DevelopersFacilityListPage from './public/DevelopersFacilityListPage.jsx';
 import DevelopersDashboardPage from './public/DevelopersDashboardPage.jsx';
+import DevelopersApprovalPage from './public/DevelopersApprovalPage.jsx';
+
+
+// Admin Facility Pages
+
 import AdminDashboardPage from './public/AdminDashboardPage.jsx';
 import FacilityMessagePage from './public/FacilityMessagePage.jsx';
 import TherapistListPage from './public/TherapistListPage.jsx';
@@ -28,6 +34,31 @@ export default function App() {
         <Route path="/ContactUsPage" element={<ContactUsPage />} />
         
         {/* Protected Routes */}
+
+
+        {/* Admin Dev Routes */}
+        <Route 
+          path="/DevelopersFacilityListPage" 
+          element={
+            <ProtectedRoute>
+              <DevelopersFacilityListPage />
+            </ProtectedRoute>
+          } 
+        />
+
+         <Route 
+          path="/DevelopersApprovalPage" 
+          element={
+            <ProtectedRoute>
+              <DevelopersApprovalPage />
+            </ProtectedRoute>
+          } 
+        />
+
+
+
+
+        {/* Admin Facility Routes */}
         <Route 
           path="/FacilityMessagePage" 
           element={
@@ -62,7 +93,7 @@ export default function App() {
           } 
         />
 
-<Route 
+        <Route 
           path="/AdminParentsListPage" 
           element={
             <ProtectedRoute>
@@ -70,6 +101,7 @@ export default function App() {
             </ProtectedRoute>
           } 
         />
+
       </Routes>
     </Router>
   );

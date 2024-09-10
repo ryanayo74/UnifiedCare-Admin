@@ -179,8 +179,8 @@ function DevelopersDashboardPage() {
                 </div>
                 <nav className="menu">
                     <a href="#" className="menu-item">Dashboard</a>
-                    <a href="#" className="menu-item" onClick={() => navigate('/FacilitiesPage')}>Facilities</a>
-                    <a href="#" className="menu-item">Approval</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/DevelopersFacilityListPage')}>Facilities</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/DevelopersApprovalPage')}>Approval</a>
                     <a href="#" className="menu-item">Announcements</a>                
                </nav>
                 <div className="logout">

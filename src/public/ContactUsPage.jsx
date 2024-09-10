@@ -32,7 +32,7 @@ function ContactUsPage() {
 
         try {
             // Save the formData to Firestore under "Users" > "facility" > "pending"
-            const docRef = await addDoc(collection(db, "Users", "adminDev", "pending"), {
+            const docRef = await addDoc(collection(db, "Users", "facility", "pending"), {
                 name: formData.name,
                 email: formData.email,
                 phoneNumber: formData.phoneNumber,
@@ -73,7 +73,7 @@ function ContactUsPage() {
             <div className="contact-form-container">
                 <form className="contact-form" onSubmit={handleSubmit}>
                     <div className="form-group">
-                        <label htmlFor="name">Name</label>
+                        <label htmlFor="name">Facility Name</label>
                         <input type="text" id="name" name="name" value={formData.name} onChange={handleChange} required />
                     </div>
                     <div className="form-group">
