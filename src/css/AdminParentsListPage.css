@@ -112,3 +112,23 @@
   font-size: large;
   font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
 }
+
+.modal-content {
+  background-color: #ffffffaf;
+  padding: 20px;
+  border-radius: 10px;
+  width: 50%;
+  text-align: center;
+}
+
+.modal-content h2 {
+  margin-bottom: 20px;
+  color: #000000;
+}
+
+.modal-content p {
+  margin: 10px 0;
+  Display: flex;
+  padding: 1%;
+  color: #000000;
+}

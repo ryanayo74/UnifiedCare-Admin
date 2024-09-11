@@ -111,7 +111,6 @@ header:after {
   margin-top: 20px;
 }
 
-/* Default burger button hidden on larger screens */
 .burger-menu {
   display: none;
 }

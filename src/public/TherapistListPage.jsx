@@ -12,7 +12,9 @@ export default function TherapistListPage() {
   const [facilityImage, setFacilityImage] = useState('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png'); // Default image
   const [error, setError] = useState(null);
   const [currentDocId, setCurrentDocId] = useState(null);
-  const [therapists, setTherapists] = useState([]); // State to hold fetched therapist data
+  const [therapists, setTherapists] = useState([]);
+  const [selectedTherapist, setSelectedTherapist] = useState(null); // To hold the selected therapist data
+  const [isModalOpen, setIsModalOpen] = useState(false); // Modal visibility state
 
   useEffect(() => {
     const email = localStorage.getItem('adminEmail');
@@ -74,13 +76,22 @@ export default function TherapistListPage() {
       const therapistSnapshot = await getDocs(collection(db, "Users", "therapists", "newUserTherapist"));
       const fetchedTherapists = [];
       therapistSnapshot.forEach((doc) => {
-        fetchedTherapists.push(doc.data());
+        fetchedTherapists.push({ id: doc.id, ...doc.data() }); 
       });
       setTherapists(fetchedTherapists);
     } catch (error) {
       console.error("Error fetching therapist data:", error);
       setError("Failed to fetch therapist data.");
     }
+  };
+
+  const handleViewClick = (therapist) => {
+    setSelectedTherapist(therapist); // Set selected therapist data
+    setIsModalOpen(true); // Open the modal
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
   };
 
   const handleLogout = () => {
@@ -102,11 +113,12 @@ export default function TherapistListPage() {
           <a href="#" className="menu-item">Announcements</a>
           <a href="#" className="menu-item">Approval</a>
           <a href="#" className="menu-item" onClick={() => navigate('/FacilityMessagePage')}>Messages</a>
-                </nav>
+        </nav>
         <div className="logout">
           <a href="#" onClick={handleLogout}>Logout</a>
         </div>
       </aside>
+
       <main className="main-content">
         <div className="facility-info">
           <img
@@ -127,6 +139,7 @@ export default function TherapistListPage() {
           <span>{facilityName}</span>
           {error && <p className="error">{error}</p>}
         </div>
+
         <div className="header">
           <h2>Therapist List</h2>
           <div className="actions">
@@ -151,12 +164,31 @@ export default function TherapistListPage() {
               <td>{therapist.email}</td>
               <td>{therapist.phoneNumber}</td>
               <td>{therapist.therapyType}</td>
-              <td><a href={`/therapist/${index}`}>View</a></td>
+              <td><button onClick={() => handleViewClick(therapist)}>View</button></td>
             </tr>
           ))}
         </tbody>
         </table>
       </main>
+
+     {/* Modal for displaying therapist details */}
+      {isModalOpen && (
+        <div className="modal">
+          <div className="modal-content">
+            <h2>Therapist Details</h2>
+            {selectedTherapist && (
+              <>
+                <p><strong>Name:</strong> {selectedTherapist.firstName} {selectedTherapist.lastName}</p>
+                <p><strong>Email:</strong> {selectedTherapist.email}</p>
+                <p><strong>Phone Number:</strong> {selectedTherapist.phoneNumber}</p>
+                <p><strong>Therapy Type:</strong> {selectedTherapist.therapyType}</p>
+                <p><strong>Specialization:</strong> {selectedTherapist.address}</p>
+              </>
+            )}
+            <button onClick={closeModal}>Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

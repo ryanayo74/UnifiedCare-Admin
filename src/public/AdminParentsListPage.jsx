@@ -13,6 +13,8 @@ export default function AdminParentsListPage() {
   const [error, setError] = useState(null);
   const [currentDocId, setCurrentDocId] = useState(null);
   const [parents, setParents] = useState([]);
+  const [selectedParent, setSelectedParent] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const email = localStorage.getItem('adminEmail');
@@ -74,13 +76,22 @@ export default function AdminParentsListPage() {
       const parentsSnapshot = await getDocs(collection(db, "Users", "parents", "newUserParent"));
       const fetchedParents = [];
       parentsSnapshot.forEach((doc) => {
-        fetchedParents.push(doc.data());
+        fetchedParents.push({ id: doc.id, ...doc.data() });
       });
       setParents(fetchedParents);
     } catch (error) {
       console.error("Error fetching parents data:", error);
       setError("Failed to fetch parents data.");
     }
+  };
+
+  const handleViewClick = (parent) => {
+    setSelectedParent(parent); // Set selected therapist data
+    setIsModalOpen(true); // Open the modal
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
   };
 
   const handleLogout = () => {
@@ -107,6 +118,7 @@ export default function AdminParentsListPage() {
           <a href="#" onClick={handleLogout}>Logout</a>
         </div>
       </aside>
+
       <main className="main-content">
         <div className="facility-info">
           <img
@@ -127,6 +139,7 @@ export default function AdminParentsListPage() {
           <span>{facilityName}</span>
           {error && <p className="error">{error}</p>}
         </div>
+
         <div className="header">
           <h2>Parents List</h2>
           <div className="actions">
@@ -151,12 +164,31 @@ export default function AdminParentsListPage() {
                 <td>{parent.parentDetails?.email}</td>
                 <td>{parent.parentDetails?.phone}</td>
                 <td>{parent.childDetails?.therapyType}</td>
-                <td><a href={`/parents/${index}`}>View</a></td>
+                <td><button onClick={() => handleViewClick(parent)}>View</button></td>
               </tr>
             ))}
           </tbody>
         </table>
       </main>
+
+      {/* Modal for displaying therapist details */}
+      {isModalOpen && (
+        <div className="modal">
+          <div className="modal-content">
+            <h2>Parents Details</h2>
+            {selectedParent && (
+              <>
+                <p><strong>Name:</strong> {selectedParent.parentDetails.firstName} {selectedParent.parentDetails.lastName}</p>
+                <p><strong>Email:</strong> {selectedParent.parentDetails.email}</p>
+                <p><strong>Phone Number:</strong> {selectedParent.parentDetails.phone}</p>
+                <p><strong>Therapy Type:</strong> {selectedParent.childDetails.therapyType}</p>
+                <p><strong>Specialization:</strong> {selectedParent.childDetails.address}</p>
+              </>
+            )}
+            <button onClick={closeModal}>Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
