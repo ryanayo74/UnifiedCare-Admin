@@ -5,6 +5,7 @@ import '../css/LandingPage.css';
 function LandingPage() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
+  const [isNavOpen, setIsNavOpen] = useState(false); // State to control nav menu visibility
 
   useEffect(() => {
     // Simulate an API call or other logic
@@ -14,20 +15,30 @@ function LandingPage() {
   }, []);
 
   const handleJoinUsClick = () => {
-    navigate('/ContactUsPage'); // Redirect to AdminJoinUsPage
+    navigate('/ContactUsPage'); // Redirect to ContactUsPage
   };
 
   const handleLoginClick = () => {
-    navigate('/AdminLoginPage'); // Redirect to FacilityMessagePage
+    navigate('/AdminLoginPage'); // Redirect to AdminLoginPage
   };
-  
+
+  const toggleNav = () => {
+    setIsNavOpen(!isNavOpen); // Toggle the burger menu
+  };
+
   return (
     <div className="landing-page">
       <header>
+          {/* Burger menu button */}
+          <button className="burger-menu" onClick={toggleNav}>
+          &#9776; {/* Unicode character for burger icon */}
+        </button>
         <div className="logo-container">
           <div className="logo-text">UnifiedCare</div>
         </div>
-        <nav>
+
+        {/* Traditional navigation for larger screens */}
+        <nav className={isNavOpen ? "nav-open" : ""}>
           <a href="#">Home</a>
           <a href="#">About Us</a>
           <a href="#" className="login" onClick={handleLoginClick}>
@@ -35,6 +46,7 @@ function LandingPage() {
           </a>
         </nav>
       </header>
+
       <main>
         <h1>Grow your Facility with UnifiedCare!</h1>
         <p>
@@ -46,8 +58,7 @@ function LandingPage() {
         <button className="register" onClick={handleJoinUsClick}>
           JOIN US NOW
         </button>
-        <div className="image-container">
-        </div>
+        <div className="image-container"></div>
       </main>
     </div>
   );

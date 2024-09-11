@@ -32,9 +32,10 @@ header {
   background-repeat: no-repeat;
   width: 50px;
   height: 50px;
-  display: inline-block;
   margin-right: 10px;
 }
+
+
 
 .logo-text {
   font-size: 24px;
@@ -91,14 +92,16 @@ main button.register {
 
 .image-container {
   margin-top: 20px;
-  margin-left: 1350px;
+  margin-left: 1200px;
   margin-top: -500px;
-  width: 500px;
-  height: 500px;
+  width: 600px;
+  height: 600px;
+  background-color: rgb(240, 7, 7);
   background-image: url('../assets/landingpagelogo.png');
   background-size: cover;
   background-position: center;
   border-radius: 50%;
+ 
 }
 
 header:after {
@@ -106,4 +109,179 @@ header:after {
   display: block;
   border-bottom: 2px solid black;
   margin-top: 20px;
+}
+
+/* Default burger button hidden on larger screens */
+.burger-menu {
+  display: none;
+}
+
+/* Responsive adjustments for medium-large devices */
+@media (max-width: 1360px) {
+
+  /* Main content styles */
+  main {
+    max-width: 800px;
+    margin: auto;
+  }
+
+  main p {
+    font-size: 22px;
+  }
+
+  main h1 {
+    font-size: 50px;
+  }
+
+  /* Image container styles */
+  .image-container {
+    margin: 20px auto;
+    width: 400px;
+    height: 400px;
+    background-image: url('../assets/landingpagelogo.png');
+    background-size: cover;
+    background-position: center;
+    border-radius: 50%;
+  }
+
+  .logo-text {
+    margin-right: 0;
+    margin-bottom: 15px;
+  }
+
+}
+
+/* Hide navigation links and show burger button on screens <= 768px */
+@media (max-width: 768px) {
+  header nav {
+    display: none;
+  }
+
+  .burger-menu {
+    display: block;
+    font-size: 40px;
+    cursor: pointer;
+    color: white;
+    border: none;
+    background: none;
+    padding: 0;
+    margin-right: auto;
+  }
+
+  /* Show dropdown menu when burger is clicked */
+  .nav-open {
+    display: flex;
+    position: absolute;
+    top: 60px;
+    right: 300px;
+    background-color: #b47c5f;
+    padding: 10px;
+    border-radius: 8px;
+  }
+
+  .nav-open a {
+    display: block;
+    color: white;
+    padding: 10px;
+    text-decoration: none;
+    margin: 10px 0;
+    font-size: 18px;
+  }
+
+  .nav-open a.login {
+    background-color: transparent;
+    color: white;
+    padding: 10px 35px;
+    border: 2px solid white;
+    border-radius: 5px;
+    text-decoration: none;
+  }
+
+  .logo-container {
+    display: flex;
+    align-items: center;
+  }
+  
+  .logo-container:before {
+    content: '';
+    background-image: url('../assets/landingpagelogo.png');
+    background-size:cover;
+    background-repeat: no-repeat;
+    width: 50px;
+    height: 50px;
+    margin-right: 10px;
+  }
+
+  .logo-text {
+
+    font-weight: 900;
+    font-family: sans-serif;
+  }
+}
+
+
+
+@media (max-width: 480px) {
+
+   .image-container {
+    width: 200px;
+    height: 200px;
+  }
+
+  .logo-text {
+    font-size: 18px;
+  }
+
+  main h1 {
+    font-size: 30px;
+  }
+
+  main p {
+    font-size: 18px;
+  }
+
+  main button.register {
+    font-size: 16px;
+    padding: 8px 16px;
+  }
+
+  .burger-menu {
+    display: block;
+    font-size: 40px;
+    cursor: pointer;
+    color: white;
+    border: none;
+    background: none;
+    padding: 0;
+    margin-right: auto;
+  }
+
+  /* Show dropdown menu when burger is clicked */
+  .nav-open {
+    display: flex;
+    position: absolute;
+    top: 60px;
+    right: 300px;
+    background-color: #b47c5f;
+    padding: 10px;
+    border-radius: 8px;
+  }
+
+  .nav-open a {
+    display: block;
+    color: white;
+    padding: 10px;
+    text-decoration: none;
+    margin: 10px 0;
+    font-size: 18px;
+  }
+
+  .nav-open a.login {
+    background-color: transparent;
+    color: white;
+    padding: 10px 35px;
+    border: 2px solid white;
+    border-radius: 5px;
+    text-decoration: none;
+  }
 }

@@ -3,11 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, query, where } from "firebase/firestore"; 
 import '../css/AdminLoginPage.css';
 import { db } from '../config/firebase';
+import logo from '../assets/loginLogo.png';
+import loginImage from '../assets/LoginBackgroundImage.png';
 
 function AdminLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // State for password visibility
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -75,11 +78,16 @@ function AdminLoginPage() {
     }
   };
 
+  // Function to toggle password visibility
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
     <div className="login-container">
       <div className="login-form">
         <div className="logo">
-          <img src="./assets/your-logo.png" alt="Logo" />
+          <img src={logo} alt="Logo" />
         </div>
         <h2>Welcome admin!</h2>
         <p>Please enter your details</p>
@@ -99,14 +107,17 @@ function AdminLoginPage() {
           <div className="input-container">
             <label htmlFor="password">Password</label>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"} // Toggle between "text" and "password"
               id="password"
               placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-            <span className="password-eye">&#128065;</span>
+            {/* Eye icon to toggle password visibility */}
+            <span className="password-eye" onClick={togglePasswordVisibility}>
+              {showPassword ? '🙈' : '👁️'} {/* Change icon based on visibility */}
+            </span>
           </div>
           <div className="remember-forgot">
             <label>
@@ -118,7 +129,7 @@ function AdminLoginPage() {
         </form>
       </div>
       <div className="login-image">
-        <img src="./assets/landingpagelogo.png" alt="Children" />
+        <img src={loginImage} alt="Logo" />
       </div>
     </div>
   );
