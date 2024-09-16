@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
+import { collection, getDocs, updateDoc, doc, setDoc} from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../config/firebase';
 import '../css/TherapistListPage.css';
@@ -17,6 +17,9 @@ export default function TherapistListPage() {
   const [selectedTherapist, setSelectedTherapist] = useState(null); // To hold the selected therapist data
   const [isModalOpen, setIsModalOpen] = useState(false); // For parent modal
   const [isFacilityModalOpen, setIsFacilityModalOpen] = useState(false); // For facility modal
+  const [newTherapist, setNewTherapist] = useState({}); // To hold new therapist data
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false); // For add therapist modal
+
 
   useEffect(() => {
     const email = localStorage.getItem('adminEmail');
@@ -97,6 +100,57 @@ export default function TherapistListPage() {
     setIsModalOpen(false);
   };
 
+
+  const handleAddClick = () => {
+    setNewTherapist({
+      firstName: '',
+      lastName: '',
+      email: '',
+      phoneNumber: '',
+      therapyType: '',
+      specialization: '',
+      address: ''
+    });
+    setIsAddModalOpen(true);
+  };
+
+  const closeAddModal = () => {
+    setIsAddModalOpen(false);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewTherapist((prev) => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  
+
+  const handleAddTherapist = async () => {
+    try {
+      // Combine firstName and lastName to create a custom document ID
+      const docId = `${newTherapist.firstName}_${newTherapist.lastName}`;
+  
+      // Construct the therapist data with a fullName field
+      const therapistWithFullName = {
+        ...newTherapist,
+        fullName: `${newTherapist.firstName} ${newTherapist.lastName}` // Combine first and last name
+      };
+  
+      // Add the new therapist document with a custom ID
+      await setDoc(doc(db, "Users", "therapists", "newUserTherapist", docId), therapistWithFullName);
+      fetchTherapists(); // Refresh the therapist list after adding
+      closeAddModal();
+    } catch (error) {
+      console.error("Error adding therapist:", error);
+      setError("Failed to add therapist.");
+    }
+  };
+  
+  
+
   const handleFacilityImageClick = () => {
     setIsFacilityModalOpen(true); 
   };
@@ -145,10 +199,11 @@ export default function TherapistListPage() {
         <div className="header">
           <h2>Therapist List</h2>
           <div className="actions">
-            <button className="btn-add">ADD</button>
+          <button className="btn-add" onClick={handleAddClick}>ADD</button>
             <button className="btn-edit">EDIT</button>
           </div>
         </div>
+        
         <table className="therapist-table">
           <thead>
             <tr>
@@ -173,6 +228,8 @@ export default function TherapistListPage() {
         </table>
       </main>
 
+
+      {/* Therapist Details Modal */}
       {isModalOpen && selectedTherapist && (
   <div className="modal">
     <div className="modal-content parent-modal">
@@ -226,7 +283,6 @@ export default function TherapistListPage() {
   </div>
 )}
 
-
       {/* Modal for facility image and details */}
       {isFacilityModalOpen && (
         <div className="modal">
@@ -273,8 +329,97 @@ export default function TherapistListPage() {
           </div>
         </div>
       )}
+
+
+      {/* Add Therapist Modal */}
+      {isAddModalOpen && (
+        <div className="modal">
+          <div className="modal-content">
+            <button className="modal-close" onClick={closeAddModal}>X</button>
+            <div className="modal-header">
+              <h3>Add New Therapist</h3>
+            </div>
+
+            <div className="modal-body">
+              <div className="modal-info-group">
+                <label>First Name</label>
+                <input 
+                  type="text" 
+                  name="firstName" 
+                  value={newTherapist.firstName} 
+                  onChange={handleInputChange} 
+                />
+              </div>
+
+              <div className="modal-info-group">
+                <label>Last Name</label>
+                <input 
+                  type="text" 
+                  name="lastName" 
+                  value={newTherapist.lastName} 
+                  onChange={handleInputChange} 
+                />
+              </div>
+
+              <div className="modal-info-group">
+                <label>Email</label>
+                <input 
+                  type="email" 
+                  name="email" 
+                  value={newTherapist.email} 
+                  onChange={handleInputChange} 
+                />
+              </div>
+
+              <div className="modal-info-group">
+                <label>Phone Number</label>
+                <input 
+                  type="text" 
+                  name="phoneNumber" 
+                  value={newTherapist.phoneNumber} 
+                  onChange={handleInputChange} 
+                />
+              </div>
+
+              <div className="modal-info-group">
+                <label>Therapy Type</label>
+                <input 
+                  type="text" 
+                  name="therapyType" 
+                  value={newTherapist.therapyType} 
+                  onChange={handleInputChange} 
+                />
+              </div>
+
+              <div className="modal-info-group">
+                <label>Specialization</label>
+                <input 
+                  type="text" 
+                  name="specialization" 
+                  value={newTherapist.specialization} 
+                  onChange={handleInputChange} 
+                />
+              </div>
+
+              <div className="modal-info-group">
+                <label>Address</label>
+                <input 
+                  type="text" 
+                  name="address" 
+                  value={newTherapist.address} 
+                  onChange={handleInputChange} 
+                />
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn-add" onClick={handleAddTherapist}>ADD THERAPIST</button>
+              <button className="btn-cancel" onClick={closeAddModal}>CANCEL</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
   
