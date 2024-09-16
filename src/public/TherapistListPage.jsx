@@ -10,11 +10,13 @@ export default function TherapistListPage() {
   const [adminEmail, setAdminEmail] = useState('');
   const [facilityName, setFacilityName] = useState('Facility');
   const [facilityImage, setFacilityImage] = useState('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png'); // Default image
+  const [facilityAddress, setFacilityAddress] = useState('123 Facility St.');
   const [error, setError] = useState(null);
   const [currentDocId, setCurrentDocId] = useState(null);
   const [therapists, setTherapists] = useState([]);
   const [selectedTherapist, setSelectedTherapist] = useState(null); // To hold the selected therapist data
-  const [isModalOpen, setIsModalOpen] = useState(false); // Modal visibility state
+  const [isModalOpen, setIsModalOpen] = useState(false); // For parent modal
+  const [isFacilityModalOpen, setIsFacilityModalOpen] = useState(false); // For facility modal
 
   useEffect(() => {
     const email = localStorage.getItem('adminEmail');
@@ -56,6 +58,7 @@ export default function TherapistListPage() {
         if (data.email === email) {
           setFacilityName(data.name || 'Sample Facility');
           setFacilityImage(data.image || '/path-to-default-facility.jpg');
+          setFacilityAddress(data.address || '123 Facility St.');
           setCurrentDocId(doc.id);
           found = true;
         }
@@ -94,6 +97,14 @@ export default function TherapistListPage() {
     setIsModalOpen(false);
   };
 
+  const handleFacilityImageClick = () => {
+    setIsFacilityModalOpen(true); 
+  };
+
+  const closeFacilityModal = () => {
+    setIsFacilityModalOpen(false);
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('adminEmail');
@@ -120,21 +131,12 @@ export default function TherapistListPage() {
       </aside>
 
       <main className="main-content">
-        <div className="facility-info">
+        <div className="facility-info" onClick={handleFacilityImageClick} style={{ cursor: 'pointer' }}>
           <img
             src={facilityImage}
             alt="Facility"
             className="facility-img"
-            onClick={() => document.getElementById('imageUpload').click()}
-            style={{ cursor: 'pointer' }}
             onError={() => setFacilityImage('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png')}
-          />
-          <input
-            type="file"
-            id="imageUpload"
-            accept="image/*"
-            style={{ display: 'none' }}
-            onChange={handleImageUpload}
           />
           <span>{facilityName}</span>
           {error && <p className="error">{error}</p>}
@@ -171,21 +173,103 @@ export default function TherapistListPage() {
         </table>
       </main>
 
-     {/* Modal for displaying therapist details */}
-      {isModalOpen && (
+      {isModalOpen && selectedTherapist && (
+  <div className="modal">
+    <div className="modal-content parent-modal">
+      <button className="modal-close" onClick={closeModal}>X</button>
+      
+      <div className="modal-header">
+        <img
+          src={selectedTherapist.imageUrl}
+          alt="Parent Avatar"
+          className="parent-img"
+        />
+      </div>
+
+      <div className="modal-body">
+        <div className="modal-info-group">
+          <label>Therapist Name</label>
+          <p>{selectedTherapist.firstName} {selectedTherapist.lastName}</p>
+        </div>
+        
+        <div className="modal-info-group">
+          <label>Email</label>
+          <p>{selectedTherapist.email}</p>
+        </div>
+        
+        <div className="modal-info-group">
+          <label>Phone Number</label>
+          <p>{selectedTherapist.phoneNumber}</p>
+        </div>
+
+        <div className="modal-info-group">
+          <label>Therapy Type</label>
+          <p>{selectedTherapist.therapyType}</p>
+        </div>
+
+        <div className="modal-info-group">
+          <label>Address</label>
+          <p>{selectedTherapist.address}</p>
+        </div>
+
+        <div className="modal-info-group">
+          <label>Specialization</label>
+          <p>{selectedTherapist.specialization || "N/A"}</p>
+        </div>
+      </div>
+
+      <div className="modal-footer">
+        <button className="btn-update">UPDATE</button>
+        <button className="btn-delete">DELETE</button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+      {/* Modal for facility image and details */}
+      {isFacilityModalOpen && (
         <div className="modal">
           <div className="modal-content">
-            <h2>Therapist Details</h2>
-            {selectedTherapist && (
-              <>
-                <p><strong>Name:</strong> {selectedTherapist.firstName} {selectedTherapist.lastName}</p>
-                <p><strong>Email:</strong> {selectedTherapist.email}</p>
-                <p><strong>Phone Number:</strong> {selectedTherapist.phoneNumber}</p>
-                <p><strong>Therapy Type:</strong> {selectedTherapist.therapyType}</p>
-                <p><strong>Specialization:</strong> {selectedTherapist.address}</p>
-              </>
-            )}
-            <button onClick={closeModal}>Close</button>
+            <div className="modal-header">
+              <img 
+                src={facilityImage} 
+                alt="Facility" 
+                className="modal-facility-img"
+                onClick={() => document.getElementById('imageUpload').click()}
+              />
+              <input 
+                type="file" 
+                id="imageUpload" 
+                accept="image/*"
+                style={{ display: 'none' }} 
+                onChange={handleImageUpload}
+              />
+            </div>
+
+            <div className="modal-body">
+              <div className="modal-section">
+                <label>Facility Name</label>
+                <input type="text" value={facilityName} readOnly />
+              </div>
+
+              <div className="modal-section description">
+                <label>Facility Description</label>
+                <textarea readOnly>
+                  We are the best clinic
+                </textarea>
+              </div>
+
+              <div className="modal-section">
+                <label>Facility Address</label>
+                <input type="text" value={facilityAddress} readOnly />
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn-update">UPDATE</button>
+              <button className="btn-cancel" onClick={closeFacilityModal}>CANCEL</button>
+            </div>
           </div>
         </div>
       )}
