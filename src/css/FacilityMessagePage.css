@@ -8,9 +8,7 @@ body {
 .facility-message-page {
     display: flex;
     height: 100vh; /* Full viewport height */
-    width: 100vw;  /* Full viewport width */
-    margin: 0;     /* Remove default margins */
-    padding: 0;    /* Remove default padding */
+    width: 100vw; /* Full viewport width */
   }
 
 .sidebar {
@@ -51,47 +49,69 @@ body {
     color: #fff;
     text-decoration: none;
 }
-
-.main-content {
-    flex-grow: 1;
-    padding: 20px;
-}
-
-.header {
+  h2{
+    color: black;
+  }
+  .main-header {
+    background-color: #f5a788ea;
     display: flex;
-    justify-content: flex-end;
-    margin-bottom: 20px;
-}
-
-.facility-info {
+    justify-content: space-between;
+    align-items: center;
+    padding: 30px;
+    width: 1610px;
+    margin-top: -5%;
+    margin-left: -5%;
+   
+  }
+  
+  .search-container input {
+    padding: 8px;
+    width: 300px;
+    border-radius: 20px;
+    border: 1px solid #ccc;
+  }
+  
+  .message-list {
+    margin-top: 0px;
+    margin-left: -40px;
+    margin-right: -830px;
+    height: 835px;
+    background-color: #ffbda2;
+  }
+  
+  .message-item {
     display: flex;
     align-items: center;
-}
-
-.facility-img {
+    padding: 10px 0;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .message-item:last-child {
+    border-bottom: none;
+  }
+  
+  .message-item img {
     width: 50px;
     height: 50px;
     border-radius: 50%;
     margin-right: 10px;
-}
-
-.dashboard {
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-.dashboard h1 {
-    font-size: 24px;
-    margin-bottom: 20px;
-}
-
-.user-stats {
-    margin-top: 20px;
-}
-
-.user-stats p {
+  }
+  
+  .message-item .message-info {
+    flex-grow: 1;
+  }
+  
+  .message-item .message-info h3 {
     font-size: 16px;
-    margin: 5px 0;
-}
+    margin: 0;
+    color: black;
+  }
+  
+  .message-item .message-info p {
+    margin: 0;
+    color: #020101;
+  }
+
+
+ 
+  

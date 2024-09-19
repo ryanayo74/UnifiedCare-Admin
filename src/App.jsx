@@ -16,9 +16,12 @@ import DevelopersApprovalPage from './public/DevelopersApprovalPage.jsx';
 // Admin Facility Pages
 
 import AdminDashboardPage from './public/AdminDashboardPage.jsx';
-import FacilityMessagePage from './public/FacilityMessagePage.jsx';
 import TherapistListPage from './public/TherapistListPage.jsx';
 import AdminParentsListPage from './public/AdminParentsListPage.jsx';
+import AdminFacilityAnnouncementPage from './public/AdminFacilityAnnouncementPage.jsx';
+import FacilityApprovalPage from './public/FacilityApprovalPage.jsx';
+import FacilityMessagePage from './public/FacilityMessagePage.jsx';
+
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute.jsx';
@@ -101,6 +104,26 @@ export default function App() {
             </ProtectedRoute>
           } 
         />
+
+        <Route 
+          path="/AdminFacilityAnnouncementPage" 
+          element={
+            <ProtectedRoute>
+              <AdminFacilityAnnouncementPage />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/FacilityApprovalPage" 
+          element={
+            <ProtectedRoute>
+              <FacilityApprovalPage />
+            </ProtectedRoute>
+          } 
+        />
+
+
 
       </Routes>
     </Router>

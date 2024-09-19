@@ -16,7 +16,9 @@ function AdminDashboardPage() {
     const [facilityImage, setFacilityImage] = useState('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png');
     const [error, setError] = useState(null);
     const [currentDocId, setCurrentDocId] = useState(null);
-
+    const [facilityDescription, setFacilityDescription] = useState('We are the best clinic');  // New state for description
+    const [selectedImageFile, setSelectedImageFile] = useState(null);
+  
     const [facilityAddress, setFacilityAddress] = useState('123 Facility St.');
     const [isFacilityModalOpen, setIsFacilityModalOpen] = useState(false);
 
@@ -79,25 +81,45 @@ function AdminDashboardPage() {
         }
     };
 
-    const handleImageUpload = async (e) => {
+    const handleImageUpload = (e) => {
         const file = e.target.files[0];
-        if (file && currentDocId) {
-            const storageRef = ref(storage, `facilityImages/${file.name}`);
-            try {
-                await uploadBytes(storageRef, file);
-                const downloadURL = await getDownloadURL(storageRef);
-                const docRef = doc(db, "Users", "facility", "userFacility", currentDocId);
-                await updateDoc(docRef, { image: downloadURL });
+        if (file) {
+            setSelectedImageFile(file);  // Store the selected image file in state
+            const imagePreviewURL = URL.createObjectURL(file);
+            setFacilityImage(imagePreviewURL);  // Optionally, show a preview of the selected image
+            setError(null);
+        }
+    };
 
-                setFacilityImage(downloadURL);
-                setError(null);
-            } catch (error) {
-                console.error("Error uploading image:", error);
-                setError("Failed to upload the image. Please try again.");
+    const handleUpdateClick = async () => {
+        try {
+            let updatedData = {
+                name: facilityName,
+                description: facilityDescription,
+                address: facilityAddress,
+            };
+
+            if (selectedImageFile && currentDocId) {
+                // Upload image to Firebase Storage
+                const storageRef = ref(storage, `facilityImages/${selectedImageFile.name}`);
+                await uploadBytes(storageRef, selectedImageFile);
+                const downloadURL = await getDownloadURL(storageRef);
+                updatedData.image = downloadURL;  // Add image URL to updated data
             }
-        } else if (!currentDocId) {
-            console.error("No valid document ID found.");
-            setError("No valid document ID found to update.");
+
+            // Update Firestore document with new data (name, description, address, and image if available)
+            if (currentDocId) {
+                const docRef = doc(db, "Users", "facility", "userFacility", currentDocId);
+                await updateDoc(docRef, updatedData);
+
+                setFacilityImage(updatedData.image || facilityImage);  // If image updated, reflect it
+                setError(null);
+                setIsFacilityModalOpen(false);  // Close the modal
+                setSelectedImageFile(null);  // Clear the selected file after update
+            }
+        } catch (error) {
+            console.error("Error updating facility data:", error);
+            setError("Failed to update the facility information. Please try again.");
         }
     };
 
@@ -210,11 +232,12 @@ function AdminDashboardPage() {
     };
 
     const handleFacilityImageClick = () => {
-        setIsFacilityModalOpen(true); 
-      };
+        setIsFacilityModalOpen(true);
+    };
 
-      const closeFacilityModal = () => {
+    const closeFacilityModal = () => {
         setIsFacilityModalOpen(false);
+        setSelectedImageFile(null);  // Clear selected file if modal is closed
     };
     
     const handleLogout = () => {
@@ -233,8 +256,8 @@ function AdminDashboardPage() {
                     <a href="#" className="menu-item">Dashboard</a>
                     <a href="#" className="menu-item" onClick={() => navigate('/TherapistListPage')}>Therapist</a>
                     <a href="#" className="menu-item" onClick={() => navigate('/AdminParentsListPage')}>Parents</a>
-                    <a href="#" className="menu-item">Announcements</a>
-                    <a href="#" className="menu-item">Approval</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/AdminFacilityAnnouncementPage')}>Announcements</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/FacilityApprovalPage')}>Approval</a>
                     <a href="#" className="menu-item" onClick={() => navigate('/FacilityMessagePage')}>Messages</a>
                 </nav>
                 <div className="logout">
@@ -243,17 +266,17 @@ function AdminDashboardPage() {
             </aside>
 
             <main className="main-content">
-        <div className="facility-info" onClick={handleFacilityImageClick} style={{ cursor: 'pointer' }}>
-          <img
-            src={facilityImage}
-            alt="Facility"
-            className="facility-img"
-            onError={() => setFacilityImage('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png')}
-          />
-          <span>{facilityName}</span>
-          {error && <p className="error">{error}</p>}
-        </div>
-                
+                <div className="facility-info" onClick={handleFacilityImageClick} style={{ cursor: 'pointer' }}>
+                    <img
+                        src={facilityImage}
+                        alt="Facility"
+                        className="facility-img"
+                        onError={() => setFacilityImage('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png')}
+                    />
+                    <span>{facilityName}</span>
+                    {error && <p className="error">{error}</p>}
+                </div>
+
                 <section className="dashboard">
                     <div className="year-selector">
                         <label htmlFor="year">Select Year:</label>
@@ -275,52 +298,61 @@ function AdminDashboardPage() {
                 </section>
             </main>
 
-                  {/* Modal for facility image and details */}
-      {isFacilityModalOpen && (
-        <div className="modal">
-          <div className="modal-content">
-            <div className="modal-header">
-              <img 
-                src={facilityImage} 
-                alt="Facility" 
-                className="modal-facility-img"
-                onClick={() => document.getElementById('imageUpload').click()}
-              />
-              <input 
-                type="file" 
-                id="imageUpload" 
-                accept="image/*"
-                style={{ display: 'none' }} 
-                onChange={handleImageUpload}
-              />
-            </div>
+            {/* Modal for facility image and details */}
+                {isFacilityModalOpen && (
+                    <div className="modal">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <img
+                                    src={facilityImage}
+                                    alt="Facility"
+                                    className="modal-facility-img"
+                                    onClick={() => document.getElementById('imageUpload').click()}
+                                />
+                                <input
+                                    type="file"
+                                    id="imageUpload"
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    onChange={handleImageUpload}
+                                />
+                            </div>
 
-            <div className="modal-body">
-              <div className="modal-section">
-                <label>Facility Name</label>
-                <input type="text" value={facilityName} readOnly />
-              </div>
+                            <div className="modal-body">
+                                <div className="modal-section">
+                                    <label>Facility Name</label>
+                                    <input 
+                                        type="text" 
+                                        value={facilityName} 
+                                        onChange={(e) => setFacilityName(e.target.value)}  // Allow editing of Facility Name
+                                    />
+                                </div>
 
-              <div className="modal-section description">
-                <label>Facility Description</label>
-                <textarea readOnly>
-                  We are the best clinic
-                </textarea>
-              </div>
+                                <div className="modal-section description">
+                                    <label>Facility Description</label>
+                                    <textarea 
+                                        value={facilityDescription} 
+                                        onChange={(e) => setFacilityDescription(e.target.value)}  // Allow editing of Description
+                                    />
+                                </div>
 
-              <div className="modal-section">
-                <label>Facility Address</label>
-                <input type="text" value={facilityAddress} readOnly />
-              </div>
-            </div>
+                                <div className="modal-section">
+                                    <label>Facility Address</label>
+                                    <input 
+                                        type="text" 
+                                        value={facilityAddress} 
+                                        onChange={(e) => setFacilityAddress(e.target.value)}  // Allow editing of Address
+                                    />
+                                </div>
+                            </div>
 
-            <div className="modal-footer">
-              <button className="btn-update">UPDATE</button>
-              <button className="btn-cancel" onClick={closeFacilityModal}>CANCEL</button>
-            </div>
-          </div>
-        </div>
-      )}
+                            <div className="modal-footer">
+                                <button className="btn-update" onClick={handleUpdateClick}>UPDATE</button>
+                                <button className="btn-cancel" onClick={closeFacilityModal}>CANCEL</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
         </div>
     );
 }

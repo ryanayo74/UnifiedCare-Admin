@@ -16,6 +16,8 @@ function DevelopersDashboardPage() {
     const [profileImage, setProfileImage] = useState('/path-to-default-profile.jpg'); // Default image
     const [error, setError] = useState(null);
     const [currentDocId, setCurrentDocId] = useState(null);
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
 
     const [totalUsers, setTotalUsers] = useState(0);
     const [therapistUsers, setTherapistUsers] = useState(0);
@@ -171,6 +173,15 @@ function DevelopersDashboardPage() {
         }
     };
 
+    const handleProfileImageClick = () => {
+        setIsProfileModalOpen(true);
+    };
+    
+    const closeProfileModal = () => {
+        setIsProfileModalOpen(false);
+    };
+    
+
     return (
         <div className="dev-dashboard-container">
             <aside className="sidebar">
@@ -189,14 +200,15 @@ function DevelopersDashboardPage() {
             </aside>
             <main className="dev-main-content">
                     <div className="facility-info">
-                        <img
-                            src={profileImage}
-                            alt="Profile"
-                            className="facility-img"
-                            onClick={() => document.getElementById('imageUpload').click()}
-                            style={{ cursor: 'pointer' }}
-                            onError={() => setProfileImage('/path-to-default-profile.jpg')}
-                        />
+                        
+                    <img
+                        src={profileImage}
+                        alt="Profile"
+                        className="facility-img"
+                        onClick={handleProfileImageClick}
+                        style={{ cursor: 'pointer' }}
+                        onError={() => setProfileImage('/path-to-default-profile.jpg')}
+                    />                   
                         <input
                             type="file"
                             id="imageUpload"
@@ -220,8 +232,56 @@ function DevelopersDashboardPage() {
                     </div>
                 </section>
             </main>
+
+            {isProfileModalOpen && (
+    <div className="modal">
+        <div className="modal-content">
+            <div className="modal-header">
+                <img 
+                    src={profileImage} 
+                    alt="Profile" 
+                    className="modal-profile-img"
+                    onClick={() => document.getElementById('imageUpload').click()}
+                />
+                <input 
+                    type="file" 
+                    id="imageUpload" 
+                    accept="image/*"
+                    style={{ display: 'none' }} 
+                    onChange={handleImageUpload}
+                />
+            </div>
+
+            <div className="modal-body">
+                <div className="modal-section">
+                    <label>Developer Name</label>
+                    <input type="text" value={developerName} readOnly />
+                </div>
+
+                <div className="modal-section">
+                    <label>Email</label>
+                    <input type="text" value={adminEmail} readOnly />
+                </div>
+
+                <div className="modal-section description">
+                    <label>Profile Description</label>
+                    <textarea readOnly>
+                        Senior Developer at Company XYZ
+                    </textarea>
+                </div>
+            </div>
+
+            <div className="modal-footer">
+                <button className="btn-update">UPDATE</button>
+                <button className="btn-cancel" onClick={closeProfileModal}>CANCEL</button>
+            </div>
+        </div>
+    </div>
+)}
         </div>
     );
 }
 
 export default DevelopersDashboardPage;
+
+
