@@ -1,104 +1,105 @@
 body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f2f2f2;
-  }
-  
-  .login-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    background-color: white;
-  }
-  
-  .login-form {
-    width: 500px;
-    height: 700px;
-    padding: 40px;
-    background-color: white;
-    text-align: center;
-  }
-  
-  .login-form .logo img {
-    height: 150px;
-    margin-left: 100px;
-    display: flex;
-    justify-content: cover;
-    align-items: cover;
-  }
-  
-  .login-form h2 {
-    font-size: 40px;
-    margin-bottom: 10px;
-    color: #333;
-    font-style: normal;
-  }
-  
-  .login-form p {
-    color: #888;
-    margin-bottom: 20px;
-  }
-  
-  .input-container {
-    margin-bottom: 20px;
-    text-align: left;
-  }
-  
-  .input-container label {
-    display: block;
-    margin-bottom: 5px;
-    color: #fafafa;
-  }
-  
-  .input-container input {
-    width: 100%;
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid #000000;
-  }
-  
-  .password-eye {
-    position: fixed;
-    left: 470px;
-    top: 520px;
-    cursor: pointer;
-  }
-  .remember-forgot {
-    display: flex;
-    color: #000000;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-  
-  .remember-forgot a {
-    color: #000000;
-    text-decoration: none;
-  }
-  
-  .login-button {
-    width: 70%;
-    padding: 10px;
-    background-color: #333;
-    color: white;
-    border: none;
-    border-radius: 50px;
-    cursor: pointer;
-    font-size: 20px;
-  }
-  
-  .login-image {
-    display: flex;
-    justify-content: cover;
-    align-items: cover;
-    height: 100%;
-  
-  }
-  
-  .login-image img {
-    max-width: 100%;
-    max-height: 100%;
-  }
-  
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f2f2f2;
+}
+
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: white;
+}
+
+.login-form {
+  width: 500px;
+  height: 700px;
+  padding: 40px;
+  background-color: white;
+  text-align: center;
+}
+
+.login-form .logo img {
+  height: 150px;
+  margin-left: 100px;
+  display: flex;
+  justify-content: cover;
+  align-items: cover;
+}
+
+.login-form h2 {
+  font-size: 40px;
+  margin-bottom: 10px;
+  color: #333;
+  font-style: normal;
+}
+
+.login-form p {
+  color: #888;
+  margin-bottom: 20px;
+}
+
+.input-container {
+  position: relative; /* Added to make the eye position relative to this container */
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.input-container label {
+  display: block;
+  margin-bottom: 5px;
+  color: #000000;
+}
+
+.input-container input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #000000;
+}
+
+.password-eye {
+  position: absolute; /* Change to absolute */
+  right: 10px; /* Position it to the right of the input field */
+  top: 65%;
+  transform: translateY(-50%); /* Vertically center the icon */
+  cursor: pointer;
+}
+
+.remember-forgot {
+  display: flex;
+  color: #000000;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.remember-forgot a {
+  color: #000000;
+  text-decoration: none;
+}
+
+.login-button {
+  width: 70%;
+  padding: 10px;
+  background-color: #333;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.login-image {
+  display: flex;
+  justify-content: cover;
+  align-items: cover;
+  height: 100%;
+}
+
+.login-image img {
+  max-width: 100%;
+  max-height: 100%;
+}

@@ -4,6 +4,7 @@ import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../config/firebase';
 import { Bar } from 'react-chartjs-2';
+import loginImage from '../assets/unifiedcarelogo.png';
 import '../css/AdminDashboardPage.css';
 
 import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Legend, Tooltip } from 'chart.js';
@@ -250,7 +251,8 @@ function AdminDashboardPage() {
         <div className="dashboard-container">
             <aside className="sidebar">
                 <div className="logo-container">
-                    <img src="https://i.ytimg.com/vi/CYcrmsdZuyw/sddefault.jpg" alt="UnifiedCare Logo" className="logo" />
+                <img src={loginImage} alt="Logo" />
+                <h2>UnifiedCare</h2>
                 </div>
                 <nav className="menu">
                     <a href="#" className="menu-item">Dashboard</a>

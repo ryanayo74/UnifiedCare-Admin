@@ -20,10 +20,17 @@ body {
     padding: 20px;
     color: #fff;
 }
+.logo-container h2 {
+ margin-top: 30%;
+ margin-left: -40%;
+ color: white;
+ 
+}
 
 .logo-container img {
     width: 100px; /* Adjusted for your desired size */
     margin-bottom: 20px;
+    margin-left: 10%;
 }
 
 .menu-item {
@@ -44,8 +51,8 @@ body {
 }
 
 .menu-item::before {
-    content: url('path/to/your/icon.png'); /* Replace with your icons */
-    margin-right: 10px;
+ 
+    margin-right: -10px;
 }
 
 .modal {
