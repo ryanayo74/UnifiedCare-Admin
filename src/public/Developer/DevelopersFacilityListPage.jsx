@@ -5,7 +5,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
 import '../../css/AdminParentsListPage.css';
 
-export default function AdminParentsListPage() {
+export default function DevelopersFacilityListPage() {
   const navigate = useNavigate();
   const [adminEmail, setAdminEmail] = useState('');
   const [developerName, setDeveloperName] = useState('Developer');
@@ -13,75 +13,92 @@ export default function AdminParentsListPage() {
   const [error, setError] = useState(null);
   const [currentDocId, setCurrentDocId] = useState(null);
   const [parents, setParents] = useState([]);
-
+  const [profileDescription, setProfileDescription] = useState('Senior Developer at Company XYZ');
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [newProfileImage, setNewProfileImage] = useState(null); 
 
   useEffect(() => {
     const email = localStorage.getItem('adminEmail');
     if (email) {
       setAdminEmail(email);
-      fetchDevelopersData(email);
+      fetchDeveloperData(email);
     }
-
-    fetchParents();
+    fetchFacility();
   }, []);
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (file && currentDocId) {
-      const storageRef = ref(storage, `facilityImages/${file.name}`);
-      try {
-        await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(storageRef);
-        const docRef = doc(db, "Users", "facility", "userFacility", currentDocId);
-        await updateDoc(docRef, { image: downloadURL });
-        setProfileImage(downloadURL);
-        setError(null);
-      } catch (error) {
-        console.error("Error uploading image:", error);
-        setError("Failed to upload the image. Please try again.");
-      }
-    } else if (!currentDocId) {
-      console.error("No valid document ID found.");
-      setError("No valid document ID found to update.");
-    }
-  };
-
-  const fetchDevelopersData = async (email) => {
+  const fetchDeveloperData = async (email) => {
     try {
-        const querySnapshot = await getDocs(collection(db, "Users", "adminDev", "AdminDevUsers"));
+      const querySnapshot = await getDocs(collection(db, "Users", "adminDev", "AdminDevUsers"));
+      let found = false;
 
-        let found = false;
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            if (data.email === email) {
-                setDeveloperName(data.name || 'Sample Developer');
-                setProfileImage(data.profileImage || '/path-to-default-profile.jpg');
-                setCurrentDocId(doc.id);
-                found = true;
-            }
-        });
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.email === email) {
+          setDeveloperName(data.name || 'Sample Developer');
+          setProfileImage(data.profileImage || '/path-to-default-profile.jpg');
+          setProfileDescription(data.profileDescription || '');
+          setCurrentDocId(doc.id);
+          found = true;
+        }
+      });
 
       if (!found) {
         console.error("No document found with this email.");
         setError("No document found with this email.");
       }
     } catch (error) {
-      console.error("Error fetching facility data:", error);
-      setError("Failed to fetch facility data.");
+      console.error("Error fetching developer data:", error);
+      setError("Failed to fetch developer data.");
     }
   };
 
-  const fetchParents = async () => {
+  const fetchFacility = async () => {
     try {
       const parentsSnapshot = await getDocs(collection(db, "Users", "facility", "userFacility"));
-      const fetchedParents = [];
-      parentsSnapshot.forEach((doc) => {
-        fetchedParents.push(doc.data());
-      });
+      const fetchedParents = parentsSnapshot.docs.map(doc => doc.data());
       setParents(fetchedParents);
     } catch (error) {
       console.error("Error fetching parents data:", error);
       setError("Failed to fetch parents data.");
+    }
+  };
+
+  const handleProfileImageClick = () => {
+    setIsProfileModalOpen(true);
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setNewProfileImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setProfileImage(reader.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (currentDocId) {
+      try {
+        const docRef = doc(db, "Users", "adminDev", "AdminDevUsers", currentDocId);
+        await updateDoc(docRef, {
+          name: developerName,
+          profileDescription: profileDescription
+        });
+
+        if (newProfileImage) {
+          const storageRef = ref(storage, `developerProfiles/${newProfileImage.name}`);
+          await uploadBytes(storageRef, newProfileImage);
+          const downloadURL = await getDownloadURL(storageRef);
+          await updateDoc(docRef, { profileImage: downloadURL });
+        }
+
+        setNewProfileImage(null);
+        setIsProfileModalOpen(false);
+        setError(null);
+      } catch (error) {
+        setError("Failed to update profile information.");
+      }
     }
   };
 
@@ -93,46 +110,42 @@ export default function AdminParentsListPage() {
 
   return (
     <div className="therapist-list-container">
-       <aside className="sidebar">
-                <div className="logo-container">
-                    <img src="https://i.ytimg.com/vi/CYcrmsdZuyw/sddefault.jpg" alt="UnifiedCare Logo" className="logo" />
-                </div>
-                <nav className="menu">
-                    <a href="#" className="menu-item" onClick={() => navigate('/DevelopersDashboardPage')}>Dashboard</a>
-                    <a href="#" className="menu-item" onClick={() => navigate('/DevelopersFacilityListPage')}>Facilities</a>
-                    <a href="#" className="menu-item" onClick={() => navigate('/DevelopersApprovalPage')}>Approval</a>
-                    <a href="#" className="menu-item">Announcements</a>                
-               </nav>
-                <div className="logout">
-                    <a href="#" onClick={handleLogout}>Logout</a>
-                </div>
-            </aside>
+      <aside className="sidebar">
+        <div className="logo-container">
+          <img src="https://i.ytimg.com/vi/CYcrmsdZuyw/sddefault.jpg" alt="UnifiedCare Logo" className="logo" />
+        </div>
+        <nav className="menu">
+          <a href="#" className="menu-item" onClick={() => navigate('/DevelopersDashboardPage')}>Dashboard</a>
+          <a href="#" className="menu-item" onClick={() => navigate('/DevelopersFacilityListPage')}>Facilities</a>
+          <a href="#" className="menu-item" onClick={() => navigate('/DevelopersApprovalPage')}>Approval</a>
+          <a href="#" className="menu-item">Announcements</a>                
+        </nav>
+        <div className="logout">
+          <a href="#" onClick={handleLogout}>Logout</a>
+        </div>
+      </aside>
+
       <main className="main-content">
         <div className="facility-info">
           <img
             src={profileImage}
-            alt="Facility"
+            alt="Profile"
             className="facility-img"
-            onClick={() => document.getElementById('imageUpload').click()}
+            onClick={handleProfileImageClick}
             style={{ cursor: 'pointer' }}
-            onError={() => setprofileImage('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png')}
-          />
-          <input
-            type="file"
-            id="imageUpload"
-            accept="image/*"
-            style={{ display: 'none' }}
-            onChange={handleImageUpload}
+            onError={() => setProfileImage('/path-to-default-profile.jpg')}
           />
           <span>{developerName}</span>
           {error && <p className="error">{error}</p>}
         </div>
+        
         <div className="header">
           <h2>Facility List</h2>
           <div className="actions">
             <button className="btn-edit">EDIT</button>
           </div>
         </div>
+        
         <table className="therapist-table">
           <thead>
             <tr>
@@ -145,17 +158,66 @@ export default function AdminParentsListPage() {
           </thead>
           <tbody>
             {parents.map((parent, index) => (
-             <tr key={index}>
-             <td>{parent.name}</td> {/* Corrected line */}
-             <td>{parent.professionals}</td>
-             <td>{parent.subscribers}</td>
-             <td>{parent.subscribers}</td>
-             <td><a href={`/therapist/${index}`}>View</a></td>
-           </tr>
+              <tr key={index}>
+                <td>{parent.name}</td>
+                <td>{parent.professionals}</td>
+                <td>{parent.subscribers}</td>
+                <td>{parent.status}</td> {/* Assuming there is a 'status' field */}
+                <td><a href={`/therapist/${index}`}>View</a></td>
+              </tr>
             ))}
           </tbody>
         </table>
       </main>
+
+      {isProfileModalOpen && (
+        <div className="modal">
+          <div className="modal-content">
+            <div className="modal-header">
+              <img 
+                src={profileImage} 
+                alt="Profile" 
+                className="modal-profile-img"
+                onClick={() => document.getElementById('imageUpload').click()}
+              />
+              <input 
+                type="file" 
+                id="imageUpload" 
+                accept="image/*"
+                style={{ display: 'none' }} 
+                onChange={handleImageUpload}
+              />
+            </div>
+
+            <div className="modal-body">
+              <div className="modal-section">
+                <label>Developer Name</label>
+                <input 
+                  type="text" 
+                  value={developerName} 
+                  onChange={(e) => setDeveloperName(e.target.value)} 
+                />
+              </div>
+              <div className="modal-section">
+                <label>Email</label>
+                <input type="text" value={adminEmail} readOnly />
+              </div>
+              <div className="modal-section description">
+                <label>Profile Description</label>
+                <textarea 
+                  value={profileDescription} 
+                  onChange={(e) => setProfileDescription(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn-update" onClick={handleUpdate}>UPDATE</button>
+              <button className="btn-cancel" onClick={() => setIsProfileModalOpen(false)}>CANCEL</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

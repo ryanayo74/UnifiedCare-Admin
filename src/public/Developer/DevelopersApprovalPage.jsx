@@ -1,135 +1,139 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore"; // Import Firebase Firestore with deleteDoc
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage"; // Import Firebase Storage
-import { db, storage } from '../../config/firebase'; // Firebase config import
-import '../../css/DevelopersApprovalPage.css'; // Import your CSS file
+import { collection, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from '../../config/firebase';
+import '../../css/DevelopersApprovalPage.css';
 
 function DevelopersApprovalPage() {
   const navigate = useNavigate();
-  const [pendingUsers, setPendingUsers] = useState([]); // State to hold pending users
-  const [error, setError] = useState(null);
-  const [profileImage, setProfileImage] = useState('/path-to-default-profile.jpg');
+  const [adminEmail, setAdminEmail] = useState('');
   const [developerName, setDeveloperName] = useState('Developer');
-  const [email, setEmail] = useState('');
-  const [profileDescription, setProfileDescription] = useState('');
+  const [profileDescription, setProfileDescription] = useState('Senior Developer at Company XYZ');
+  const [profileImage, setProfileImage] = useState('/path-to-default-profile.jpg');
+  const [error, setError] = useState(null);
   const [currentDocId, setCurrentDocId] = useState(null);
-  const [selectedFacility, setSelectedFacility] = useState(null); // State to hold the selected facility for modal
-  const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal visibility
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [newProfileImage, setNewProfileImage] = useState(null); // For storing the new image file
+
+  const [pendingUsers, setPendingUsers] = useState([]);
+  const [selectedFacility, setSelectedFacility] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [facilityName, setFacilityName] = useState('');
   const [facilityMessage, setFacilityMessage] = useState('');
   const [facilityPhone, setFacilityPhone] = useState('');
 
-
-
-  // Fetch pending users from Firebase Firestore
   useEffect(() => {
-    const fetchPendingUsers = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, "Users", "facility", "pending"));
-        const fetchedUsers = [];
-        querySnapshot.forEach((doc) => {
-          fetchedUsers.push({ id: doc.id, ...doc.data() });
-        });
-        setPendingUsers(fetchedUsers);
-      } catch (error) {
-        console.error("Error fetching pending users:", error);
-        setError("Failed to fetch pending users.");
-      }
-    };
+    const email = localStorage.getItem('adminEmail');
 
-    fetchPendingUsers(); // Call the fetch function when the component mounts
-    fetchDeveloperData();
+    if (email) {
+      setAdminEmail(email);
+      fetchDeveloperData(email);
+    }
+
+    fetchPendingUsers();
   }, []);
 
-  // Fetch developer data for profile image and name
-  const fetchDeveloperData = async () => {
-    const adminEmail = localStorage.getItem('adminEmail');
-    if (adminEmail) {
-      try {
-        const querySnapshot = await getDocs(collection(db, "Users", "adminDev", "AdminDevUsers"));
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          if (data.email === adminEmail) {
-            setDeveloperName(data.name || 'Developer');
-            setEmail(data.email || '');
-            setProfileDescription(data.profileDescription || '');
-            setProfileImage(data.profileImage || '/path-to-default-profile.jpg');
-          }
-        });
-      } catch (error) {
-        console.error("Error fetching developer data:", error);
+  const fetchDeveloperData = async (email) => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "Users", "adminDev", "AdminDevUsers"));
+      let found = false;
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.email === email) {
+          setDeveloperName(data.name || 'Sample Developer');
+          setProfileImage(data.profileImage || '/path-to-default-profile.jpg');
+          setProfileDescription(data.profileDescription || '');
+          setCurrentDocId(doc.id);
+          found = true;
+        }
+      });
+
+      if (!found) {
+        console.error("No document found with this email.");
+        setError("No document found with this email.");
       }
+    } catch (error) {
+      console.error("Error fetching developer data:", error);
+      setError("Failed to fetch developer data.");
     }
   };
 
-  const handleProfileClick = () => {
-    setIsModalOpen(true); 
+  const handleProfileImageClick = () => {
+    setIsProfileModalOpen(true);
   };
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (file && currentDocId) {
-      const storageRef = ref(storage, `developerProfiles/${file.name}`);
-      try {
-        await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(storageRef);
+  const handleUpdate = async () => {
+    if (currentDocId) {
+        try {
+            const docRef = doc(db, "Users", "adminDev", "AdminDevUsers", currentDocId);
+            // Update the profile information
+            await updateDoc(docRef, {
+                name: developerName,
+                profileDescription: profileDescription
+            });
+            
+            // Handle image upload if a new image was selected
+            if (newProfileImage) {
+                const storageRef = ref(storage, `developerProfiles/${newProfileImage.name}`);
+                await uploadBytes(storageRef, newProfileImage);
+                const downloadURL = await getDownloadURL(storageRef);
+                await updateDoc(docRef, { profileImage: downloadURL });
+            }
 
-        const docRef = doc(db, "Users", "adminDev", "AdminDevUsers", currentDocId);
-        await updateDoc(docRef, { profileImage: downloadURL });
-
-        setProfileImage(downloadURL);
-        setError(null);
-      } catch (error) {
-        console.error("Error uploading image:", error);
-        setError("Failed to upload the image. Please try again.");
-      }
-    } else {
-      setError("No valid document ID found.");
+            // Reset new image state after updating
+            setNewProfileImage(null);
+            setIsProfileModalOpen(false); // Close modal after updating
+            setError(null);
+        } catch (error) {
+            setError("Failed to update profile information.");
+        }
     }
-  };
+};
 
-  // Handle view details and set facility information
-  const handleViewDetails = (facility) => {
-    setSelectedFacility(facility); // Set the selected facility
-    setFacilityName(facility.name || ''); // Set facility name in state
-    setFacilityMessage(facility.message || ''); // Set facility message in state
-    setFacilityPhone(facility.phone || ''); // Set facility phone number in state
-    setIsModalOpen(true); // Open the modal
-  };
+const handleImageUpload = (e) => {
+  const file = e.target.files[0];
+  if (file) {
+      setNewProfileImage(file); // Store the new image file
+      const reader = new FileReader();
+      reader.onloadend = () => {
+          setProfileImage(reader.result); // Preview the uploaded image
+      };
+      reader.readAsDataURL(file);
+  }
+};
 
   const closeModal = () => {
-    setIsModalOpen(false); // Close the modal
+    setIsModalOpen(false);
   };
 
-  // Save updated facility information back to Firebase
-  const handleSaveChanges = async () => {
-    const docRef = doc(db, "Users", "adminDev", "AdminDevUsers", email);
-    try {
-      await updateDoc(docRef, {
-        name: developerName,
-        email,
-        profileDescription,
-      });
-      alert("Profile updated successfully!");
-      setIsModalOpen(false); 
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      alert("Failed to update profile.");
+  const handleSaveFacilityChanges = async () => {
+    if (selectedFacility && selectedFacility.id) {
+      const docRef = doc(db, "Users", "facility", "pending", selectedFacility.id);
+      try {
+        await updateDoc(docRef, {
+          name: facilityName,
+          message: facilityMessage,
+          phone: facilityPhone,
+        });
+        alert("Facility information updated successfully!");
+        setIsModalOpen(false);
+      } catch (error) {
+        console.error("Error updating facility information:", error);
+        alert("Failed to update facility information.");
+      }
     }
   };
 
- // Handle facility rejection and deletion with confirmation
-const handleReject = async (facilityId) => {
+  const handleReject = async (facilityId) => {
     const isConfirmed = window.confirm("Are you sure you want to delete this facility?");
-    
+
     if (isConfirmed) {
       try {
-        // Delete the facility document from Firebase
         const docRef = doc(db, "Users", "facility", "pending", facilityId);
         await deleteDoc(docRef);
-        
-        // Update the UI to remove the rejected facility
+
         setPendingUsers(pendingUsers.filter(user => user.id !== facilityId));
         alert("Facility rejected and deleted successfully.");
       } catch (error) {
@@ -137,11 +141,33 @@ const handleReject = async (facilityId) => {
         alert("Failed to reject and delete the facility.");
       }
     } else {
-      // User cancelled the deletion
       alert("Deletion cancelled.");
     }
   };
+
+  const fetchPendingUsers = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "Users", "facility", "pending"));
+      const fetchedUsers = [];
   
+      querySnapshot.forEach((doc) => {
+        fetchedUsers.push({ id: doc.id, ...doc.data() });
+      });
+  
+      setPendingUsers(fetchedUsers);
+    } catch (error) {
+      console.error("Error fetching pending users:", error);
+      setError("Failed to fetch pending users.");
+    }
+  };
+  
+    const handleViewDetails = (facility) => {
+      setSelectedFacility(facility);
+      setFacilityName(facility.name || '');
+      setFacilityMessage(facility.message || '');
+      setFacilityPhone(facility.phone || '');
+      setIsModalOpen(true);
+    };
 
   const handleLogout = () => {
     localStorage.removeItem('isAuthenticated');
@@ -156,10 +182,10 @@ const handleReject = async (facilityId) => {
           <img src="https://i.ytimg.com/vi/CYcrmsdZuyw/sddefault.jpg" alt="UnifiedCare Logo" className="logo" />
         </div>
         <nav className="menu">
-          <a href="#" className="menu-item" onClick={() => navigate('/DevelopersDashboardPage')}>Dashboard</a>
+        <a href="#" className="menu-item" onClick={() => navigate('/DevelopersDashboardPage')}>Dashboard</a>
           <a href="#" className="menu-item" onClick={() => navigate('/DevelopersFacilityListPage')}>Facilities</a>
-          <a href="#" className="menu-item">Approval</a>
-          <a href="#" className="menu-item">Announcements</a>
+          <a href="#" className="menu-item" onClick={() => navigate('/DevelopersApprovalPage')}>Approval</a>
+          <a href="#" className="menu-item">Announcements</a> 
         </nav>
         <div className="logout">
           <a href="#" onClick={handleLogout}>Logout</a>
@@ -172,11 +198,12 @@ const handleReject = async (facilityId) => {
             src={profileImage}
             alt="Profile"
             className="facility-img"
-            onClick={handleProfileClick} 
+            onClick={handleProfileImageClick}
             style={{ cursor: 'pointer' }}
             onError={() => setProfileImage('/path-to-default-profile.jpg')}
           />
           <span>{developerName}</span>
+          {error && <p className="error">{error}</p>}
         </div>
 
         <div className="content">
@@ -195,9 +222,9 @@ const handleReject = async (facilityId) => {
             <tbody>
               {pendingUsers.map((user, index) => (
                 <tr key={index}>
-                  <td>{user.name}</td> {/* Replace with appropriate field from Firebase */}
-                  <td>{user.professionals}</td> {/* Replace with appropriate field */}
-                  <td>{user.email}</td> {/* Replace with appropriate field */}
+                  <td>{user.name}</td>
+                  <td>{user.professionals}</td>
+                  <td>{user.email}</td>
                   <td>
                     <button className="approve-btn">✅</button>
                     <button className="reject-btn" onClick={() => handleReject(user.id)}>❌</button>
@@ -211,7 +238,8 @@ const handleReject = async (facilityId) => {
           </table>
         </div>
 
-        {selectedFacility && (
+        {/* Facility Details Modal */}
+        {isModalOpen && selectedFacility && (
           <div className="modal">
             <div className="modal-content">
               <button className="close-modal-btn" onClick={closeModal}>X</button>
@@ -239,45 +267,63 @@ const handleReject = async (facilityId) => {
                   onChange={(e) => setFacilityPhone(e.target.value)}
                 />
               </div>
-              <button className="save-btn" onClick={handleSaveChanges}>Save Changes</button>
+              <button className="save-btn" onClick={handleSaveFacilityChanges}>Save Changes</button>
             </div>
           </div>
         )}
 
-        {isModalOpen && (
-          <div className="modal">
-            <div className="modal-content">
-              <h2>Edit Profile</h2>
-              <div>
-                <label>Developer Name:</label>
-                <input
-                  type="text"
-                  value={developerName}
-                  onChange={(e) => setDeveloperName(e.target.value)}
-                />
-              </div>
-              <div>
-                <label>Email:</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div>
-                <label>Profile Description:</label>
-                <textarea
-                  value={profileDescription}
-                  onChange={(e) => setProfileDescription(e.target.value)}
-                />
-              </div>
-              <button className="save-btn" onClick={handleSaveChanges}>Update</button>
-              <button className="cancel-btn" onClick={() => setIsModalOpen(false)}>Cancel</button>
-            </div>
-          </div>
-        )}
+        {/* Developer Profile Modal */}
+        {isProfileModalOpen && (
+                <div className="modal">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <img 
+                                src={profileImage} 
+                                alt="Profile" 
+                                className="modal-profile-img"
+                                onClick={() => document.getElementById('imageUpload').click()}
+                            />
+                            <input 
+                                type="file" 
+                                id="imageUpload" 
+                                accept="image/*"
+                                style={{ display: 'none' }} 
+                                onChange={handleImageUpload}
+                            />
+                        </div>
+
+                        <div className="modal-body">
+                            <div className="modal-section">
+                                <label>Developer Name</label>
+                                <input 
+                                    type="text" 
+                                    value={developerName} 
+                                    onChange={(e) => setDeveloperName(e.target.value)} 
+                                />
+                            </div>
+                            <div className="modal-section">
+                                <label>Email</label>
+                                <input type="text" value={adminEmail} readOnly />
+                            </div>
+                            <div className="modal-section description">
+                                <label>Profile Description</label>
+                                <textarea 
+                                    value={profileDescription} 
+                                    onChange={(e) => setProfileDescription(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="modal-footer">
+                            <button className="btn-update" onClick={handleUpdate}>UPDATE</button>
+                            <button className="btn-cancel" onClick={() => setIsProfileModalOpen(false)}>CANCEL</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
       </div>
-    </div>
-  );
+    );
 }
+
 export default DevelopersApprovalPage;
