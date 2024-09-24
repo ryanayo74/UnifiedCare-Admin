@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from '../config/firebase';
+import { db, storage } from '../../config/firebase';
 import { Bar } from 'react-chartjs-2';
-import loginImage from '../assets/unifiedcarelogo.png';
-import '../css/AdminDashboardPage.css';
+import loginImage from '../../assets/unifiedcarelogo.png';
+import '../../css/AdminDashboardPage.css';
 
 import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Legend, Tooltip } from 'chart.js';
 ChartJS.register(BarElement, CategoryScale, LinearScale, Legend, Tooltip);

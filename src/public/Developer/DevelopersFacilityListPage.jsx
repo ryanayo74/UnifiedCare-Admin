@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from '../config/firebase';
-import '../css/AdminParentsListPage.css';
+import { db, storage } from '../../config/firebase';
+import '../../css/AdminParentsListPage.css';
 
 export default function AdminParentsListPage() {
   const navigate = useNavigate();

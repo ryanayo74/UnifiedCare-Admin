@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore"; // Import Firebase Firestore with deleteDoc
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"; // Import Firebase Storage
-import { db, storage } from '../config/firebase'; // Firebase config import
-import '../css/DevelopersApprovalPage.css'; // Import your CSS file
+import { db, storage } from '../../config/firebase'; // Firebase config import
+import '../../css/DevelopersApprovalPage.css'; // Import your CSS file
 
 function DevelopersApprovalPage() {
   const navigate = useNavigate();
@@ -11,12 +11,16 @@ function DevelopersApprovalPage() {
   const [error, setError] = useState(null);
   const [profileImage, setProfileImage] = useState('/path-to-default-profile.jpg');
   const [developerName, setDeveloperName] = useState('Developer');
+  const [email, setEmail] = useState('');
+  const [profileDescription, setProfileDescription] = useState('');
   const [currentDocId, setCurrentDocId] = useState(null);
   const [selectedFacility, setSelectedFacility] = useState(null); // State to hold the selected facility for modal
   const [isModalOpen, setIsModalOpen] = useState(false); // State to control modal visibility
   const [facilityName, setFacilityName] = useState('');
   const [facilityMessage, setFacilityMessage] = useState('');
   const [facilityPhone, setFacilityPhone] = useState('');
+
+
 
   // Fetch pending users from Firebase Firestore
   useEffect(() => {
@@ -40,23 +44,27 @@ function DevelopersApprovalPage() {
 
   // Fetch developer data for profile image and name
   const fetchDeveloperData = async () => {
-    const email = localStorage.getItem('adminEmail');
-    if (email) {
+    const adminEmail = localStorage.getItem('adminEmail');
+    if (adminEmail) {
       try {
         const querySnapshot = await getDocs(collection(db, "Users", "adminDev", "AdminDevUsers"));
         querySnapshot.forEach((doc) => {
           const data = doc.data();
-          if (data.email === email) {
-            setDeveloperName(data.name || 'Sample Developer');
+          if (data.email === adminEmail) {
+            setDeveloperName(data.name || 'Developer');
+            setEmail(data.email || '');
+            setProfileDescription(data.profileDescription || '');
             setProfileImage(data.profileImage || '/path-to-default-profile.jpg');
-            setCurrentDocId(doc.id);
           }
         });
       } catch (error) {
         console.error("Error fetching developer data:", error);
-        setError("Failed to fetch developer data.");
       }
     }
+  };
+
+  const handleProfileClick = () => {
+    setIsModalOpen(true); 
   };
 
   const handleImageUpload = async (e) => {
@@ -96,20 +104,18 @@ function DevelopersApprovalPage() {
 
   // Save updated facility information back to Firebase
   const handleSaveChanges = async () => {
-    if (selectedFacility && selectedFacility.id) {
-      const docRef = doc(db, "Users", "facility", "pending", selectedFacility.id);
-      try {
-        await updateDoc(docRef, {
-          name: facilityName,
-          message: facilityMessage,
-          phone: facilityPhone,
-        });
-        setIsModalOpen(false); // Close the modal after saving
-        alert("Facility information updated successfully!");
-      } catch (error) {
-        console.error("Error updating facility information:", error);
-        alert("Failed to update facility information.");
-      }
+    const docRef = doc(db, "Users", "adminDev", "AdminDevUsers", email);
+    try {
+      await updateDoc(docRef, {
+        name: developerName,
+        email,
+        profileDescription,
+      });
+      alert("Profile updated successfully!");
+      setIsModalOpen(false); 
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      alert("Failed to update profile.");
     }
   };
 
@@ -166,19 +172,11 @@ const handleReject = async (facilityId) => {
             src={profileImage}
             alt="Profile"
             className="facility-img"
-            onClick={() => document.getElementById('imageUpload').click()}
+            onClick={handleProfileClick} 
             style={{ cursor: 'pointer' }}
             onError={() => setProfileImage('/path-to-default-profile.jpg')}
           />
-          <input
-            type="file"
-            id="imageUpload"
-            accept="image/*"
-            style={{ display: 'none' }}
-            onChange={handleImageUpload}
-          />
           <span>{developerName}</span>
-          {error && <p className="error">{error}</p>}
         </div>
 
         <div className="content">
@@ -213,7 +211,7 @@ const handleReject = async (facilityId) => {
           </table>
         </div>
 
-        {isModalOpen && selectedFacility && (
+        {selectedFacility && (
           <div className="modal">
             <div className="modal-content">
               <button className="close-modal-btn" onClick={closeModal}>X</button>
@@ -245,9 +243,41 @@ const handleReject = async (facilityId) => {
             </div>
           </div>
         )}
+
+        {isModalOpen && (
+          <div className="modal">
+            <div className="modal-content">
+              <h2>Edit Profile</h2>
+              <div>
+                <label>Developer Name:</label>
+                <input
+                  type="text"
+                  value={developerName}
+                  onChange={(e) => setDeveloperName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label>Email:</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <div>
+                <label>Profile Description:</label>
+                <textarea
+                  value={profileDescription}
+                  onChange={(e) => setProfileDescription(e.target.value)}
+                />
+              </div>
+              <button className="save-btn" onClick={handleSaveChanges}>Update</button>
+              <button className="cancel-btn" onClick={() => setIsModalOpen(false)}>Cancel</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
-
 export default DevelopersApprovalPage;

@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from '../config/firebase';
+import { db, storage } from '../../config/firebase';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Legend, Tooltip } from 'chart.js';
-import '../css/DevelopersDashboardPage.css';
+import '../../css/DevelopersDashboardPage.css';
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, Legend, Tooltip);
 

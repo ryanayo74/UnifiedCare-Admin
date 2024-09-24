@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore"; // Import Firebase Firestore with deleteDoc
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"; // Import Firebase Storage
-import { db, storage } from '../config/firebase'; // Firebase config import
+import { db, storage } from '../../config/firebase'; // Firebase config import
 
 
 function FacilityApprovalPage() {
@@ -84,7 +84,7 @@ function FacilityApprovalPage() {
     setSelectedFacility(facility); // Set the selected facility
     setFacilityName(facility.name || ''); // Set facility name in state
     setFacilityMessage(facility.message || ''); // Set facility message in state
-    setFacilityPhone(facility.phone || ''); // Set facility phone number in state
+    setFacilityPhone(facility.phoneNumber || ''); // Set facility phone number in state
     setIsModalOpen(true); // Open the modal
   };
 
@@ -100,7 +100,7 @@ function FacilityApprovalPage() {
         await updateDoc(docRef, {
           name: facilityName,
           message: facilityMessage,
-          phone: facilityPhone,
+          phoneNumber: facilityPhone,
         });
         setIsModalOpen(false); // Close the modal after saving
         alert("Facility information updated successfully!");

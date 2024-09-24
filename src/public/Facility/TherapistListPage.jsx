@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, updateDoc, doc, setDoc} from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from '../config/firebase';
-import '../css/TherapistListPage.css';
+import { db, storage } from '../../config/firebase';
+import '../../css/TherapistListPage.css';
 
 export default function TherapistListPage() {
   const navigate = useNavigate();

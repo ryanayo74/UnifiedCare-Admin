@@ -4,23 +4,23 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 // Public Pages
 import LandingPage from './public/LandingPage.jsx';
 import AdminLoginPage from './public/AdminLoginPage.jsx';
-import ContactUsPage from './public/ContactUsPage';
-import ChangePasswordPage from './public/ChangePasswordPage';
+import ContactUsPage from './public/ContactUsPage.jsx';
+import ChangePasswordPage from './public/ChangePasswordPage.jsx';
 
 // Admin Developers Pages
-import DevelopersFacilityListPage from './public/DevelopersFacilityListPage.jsx';
-import DevelopersDashboardPage from './public/DevelopersDashboardPage.jsx';
-import DevelopersApprovalPage from './public/DevelopersApprovalPage.jsx';
+import DevelopersFacilityListPage from './public/Developer/DevelopersFacilityListPage.jsx';
+import DevelopersDashboardPage from './public/Developer/DevelopersDashboardPage.jsx';
+import DevelopersApprovalPage from './public/Developer/DevelopersApprovalPage.jsx';
 
 
 // Admin Facility Pages
 
-import AdminDashboardPage from './public/AdminDashboardPage.jsx';
-import TherapistListPage from './public/TherapistListPage.jsx';
-import AdminParentsListPage from './public/AdminParentsListPage.jsx';
-import AdminFacilityAnnouncementPage from './public/AdminFacilityAnnouncementPage.jsx';
-import FacilityApprovalPage from './public/FacilityApprovalPage.jsx';
-import FacilityMessagePage from './public/FacilityMessagePage.jsx';
+import AdminDashboardPage from './public/Facility/AdminDashboardPage.jsx';
+import TherapistListPage from './public/Facility/TherapistListPage.jsx';
+import AdminParentsListPage from './public/Facility/AdminParentsListPage.jsx';
+import AdminFacilityAnnouncementPage from './public/Facility/AdminFacilityAnnouncementPage.jsx';
+import FacilityApprovalPage from './public/Facility/FacilityApprovalPage.jsx';
+import FacilityMessagePage from './public/Facility/FacilityMessagePage.jsx';
 
 
 // Components
@@ -40,6 +40,15 @@ export default function App() {
 
 
         {/* Admin Dev Routes */}
+        <Route 
+          path="/DevelopersDashboardPage" 
+          element={
+            <ProtectedRoute>
+              <DevelopersDashboardPage />
+            </ProtectedRoute>
+          } 
+        />
+
         <Route 
           path="/DevelopersFacilityListPage" 
           element={
@@ -75,14 +84,6 @@ export default function App() {
           element={
             <ProtectedRoute>
               <AdminDashboardPage />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/DevelopersDashboardPage" 
-          element={
-            <ProtectedRoute>
-              <DevelopersDashboardPage />
             </ProtectedRoute>
           } 
         />

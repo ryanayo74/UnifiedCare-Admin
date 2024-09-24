@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, updateDoc, doc, setDoc} from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from '../config/firebase';
-import '../css/AdminFacilityAnnouncementPage.css'; // You can create this file for styling
+import { db, storage } from '../../config/firebase';
+import '../../css/AdminFacilityAnnouncementPage.css'; // You can create this file for styling
 
 function AnnouncementsPage() {
     const navigate = useNavigate();

@@ -1,47 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, updateDoc, doc, setDoc} from "firebase/firestore";
+import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from '../config/firebase';
-import '../css/FacilityMessagePage.css';
+import { db, storage } from '../../config/firebase';
+import '../../css/AdminParentsListPage.css';
 
-const currentUserId = "currentLoggedInUserId";
-
-function FacilityMessagePage() {
+export default function AdminParentsListPage() {
   const navigate = useNavigate();
   const [adminEmail, setAdminEmail] = useState('');
   const [facilityName, setFacilityName] = useState('Facility');
-  const [facilityImage, setFacilityImage] = useState('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png');
+  const [facilityImage, setFacilityImage] = useState('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png'); // Default image
   const [facilityAddress, setFacilityAddress] = useState('123 Facility St.');
-  const [isFacilityModalOpen, setIsFacilityModalOpen] = useState(false);
   const [error, setError] = useState(null);
   const [currentDocId, setCurrentDocId] = useState(null);
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [parents, setParents] = useState([]);
+  const [selectedParent, setSelectedParent] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false); // For parent modal
+  const [isFacilityModalOpen, setIsFacilityModalOpen] = useState(false); // For facility modal
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const querySnapshot = await getDocs(collection(db, 'users'));
-        const usersData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setUsers(usersData);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching data: ', error);
-        setLoading(false);
-      }
-    };
-
     const email = localStorage.getItem('adminEmail');
     if (email) {
       setAdminEmail(email);
       fetchFacilityData(email);
     }
-
-    fetchUsers();
+    fetchParents();
   }, []);
 
   const handleImageUpload = async (e) => {
@@ -90,8 +73,27 @@ function FacilityMessagePage() {
     }
   };
 
-  const handleUserClick = (userId) => {
-    navigate(`/messages/${userId}?currentUserId=${currentUserId}`);
+  const fetchParents = async () => {
+    try {
+      const parentsSnapshot = await getDocs(collection(db, "Users", "parents", "newUserParent"));
+      const fetchedParents = [];
+      parentsSnapshot.forEach((doc) => {
+        fetchedParents.push({ id: doc.id, ...doc.data() });
+      });
+      setParents(fetchedParents);
+    } catch (error) {
+      console.error("Error fetching parents data:", error);
+      setError("Failed to fetch parents data.");
+    }
+  };
+
+  const handleViewClick = (parent) => {
+    setSelectedParent(parent); 
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
   };
 
   const handleFacilityImageClick = () => {
@@ -109,7 +111,7 @@ function FacilityMessagePage() {
   };
 
   return (
-    <div className="facility-message-page">
+    <div className="therapist-list-container">
       <aside className="sidebar">
         <div className="logo-container">
           <img src="https://i.ytimg.com/vi/CYcrmsdZuyw/sddefault.jpg" alt="UnifiedCare Logo" className="logo" />
@@ -126,14 +128,9 @@ function FacilityMessagePage() {
           <a href="#" onClick={handleLogout}>Logout</a>
         </div>
       </aside>
-      <main className="main-content">
 
-      <header className="main-header">
-      <h2>Messages</h2>
-          <div className="search-container">
-            <input type="text" placeholder="Search here..." />
-          </div>
-      <div className="facility-info" onClick={handleFacilityImageClick} style={{ cursor: 'pointer' }}>
+      <main className="main-content">
+        <div className="facility-info" onClick={handleFacilityImageClick} style={{ cursor: 'pointer' }}>
           <img
             src={facilityImage}
             alt="Facility"
@@ -143,27 +140,94 @@ function FacilityMessagePage() {
           <span>{facilityName}</span>
           {error && <p className="error">{error}</p>}
         </div>
-        </header>
 
-        <div className="message-list">
-          {loading ? (
-            <p>Loading messages...</p>
-          ) : (
-            users.map(user => (
-              <div key={user.id} className="message-item" onClick={() => handleUserClick(user.id)}>
-                <img src={user.profilePicture || 'https://via.placeholder.com/50'} alt={user.name} />
-                <div className="message-info">
-                  <h3>{user.name}</h3>
-                  <p>{user.lastMessage || "No message"}</p>
-                </div>
-              </div>
-            ))
-          )}
+        {/* Parents List */}
+        <div className="header">
+          <h2>Parents List</h2>
+          <div className="actions">
+            <button className="btn-add">ADD</button>
+            <button className="btn-edit">EDIT</button>
+          </div>
         </div>
+        <table className="therapist-table">
+          <thead>
+            <tr>
+              <th>Parent Name</th>
+              <th>Email</th>
+              <th>Phone Number</th>
+              <th>Therapy Type</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            {parents.map((parent, index) => (
+              <tr key={index}>
+                <td>{parent.parentDetails.firstName} {parent.parentDetails.lastName}</td>
+                <td>{parent.parentDetails?.email}</td>
+                <td>{parent.parentDetails?.phone}</td>
+                <td>{parent.childDetails?.therapyType}</td>
+                <td><button onClick={() => handleViewClick(parent)}>View</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </main>
 
+      {isModalOpen && selectedParent && (
+  <div className="modal">
+    <div className="modal-content parent-modal">
+      <button className="modal-close" onClick={closeModal}>X</button>
+      
+      <div className="modal-header">
+        <img
+          src="https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png"
+          alt="Parent Avatar"
+          className="parent-img"
+        />
+      </div>
 
-{/* Modal for facility image and details */}
+      <div className="modal-body">
+        <div className="modal-info-group">
+          <label>Parent Name</label>
+          <p>{selectedParent.parentDetails.firstName} {selectedParent.parentDetails.lastName}</p>
+        </div>
+        
+        <div className="modal-info-group">
+          <label>Email</label>
+          <p>{selectedParent.parentDetails.email}</p>
+        </div>
+        
+        <div className="modal-info-group">
+          <label>Phone Number</label>
+          <p>{selectedParent.parentDetails.phone}</p>
+        </div>
+
+        <div className="modal-info-group">
+          <label>Therapy Type</label>
+          <p>{selectedParent.childDetails.therapyType}</p>
+        </div>
+
+        <div className="modal-info-group">
+          <label>Address</label>
+          <p>{selectedParent.childDetails.address}</p>
+        </div>
+
+        <div className="modal-info-group">
+          <label>Specialization</label>
+          <p>{selectedParent.childDetails.specialization || "N/A"}</p>
+        </div>
+      </div>
+
+      <div className="modal-footer">
+        <button className="btn-update">UPDATE</button>
+        <button className="btn-delete">DELETE</button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+      {/* Modal for facility image and details */}
       {isFacilityModalOpen && (
         <div className="modal">
           <div className="modal-content">
@@ -177,7 +241,6 @@ function FacilityMessagePage() {
               <input 
                 type="file" 
                 id="imageUpload" 
-                accept="image/*"
                 style={{ display: 'none' }} 
                 onChange={handleImageUpload}
               />
@@ -209,7 +272,7 @@ function FacilityMessagePage() {
           </div>
         </div>
       )}
-      </div>
+    </div>
   );
 }
-export default FacilityMessagePage;
+ 
