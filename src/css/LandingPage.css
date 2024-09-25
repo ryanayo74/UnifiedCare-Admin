@@ -27,7 +27,7 @@ header {
 
 .logo-container:before {
   content: '';
-  background-image: url('../assets/landingpagelogo.png');
+  
   background-size:cover;
   background-repeat: no-repeat;
   width: 50px;

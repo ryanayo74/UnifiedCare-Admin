@@ -11,11 +11,14 @@ export default function DevelopersFacilityListPage() {
   const [developerName, setDeveloperName] = useState('Developer');
   const [profileImage, setProfileImage] = useState('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png');
   const [error, setError] = useState(null);
+
   const [currentDocId, setCurrentDocId] = useState(null);
-  const [parents, setParents] = useState([]);
+  const [facility, setfacility] = useState([]);
   const [profileDescription, setProfileDescription] = useState('Senior Developer at Company XYZ');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [newProfileImage, setNewProfileImage] = useState(null); 
+  const [selectedFacility, setSelectedFacility] = useState(null); 
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const email = localStorage.getItem('adminEmail');
@@ -54,12 +57,70 @@ export default function DevelopersFacilityListPage() {
 
   const fetchFacility = async () => {
     try {
-      const parentsSnapshot = await getDocs(collection(db, "Users", "facility", "userFacility"));
-      const fetchedParents = parentsSnapshot.docs.map(doc => doc.data());
-      setParents(fetchedParents);
+      const facilitySnapshot = await getDocs(collection(db, "Users", "facility", "userFacility"));
+      const fetchedFacility = [];
+      facilitySnapshot.forEach((doc) => {
+        fetchedFacility.push({ id: doc.id, ...doc.data() }); 
+      });
+      setfacility(fetchedFacility);
     } catch (error) {
-      console.error("Error fetching parents data:", error);
-      setError("Failed to fetch parents data.");
+      console.error("Error fetching facility data:", error);
+      setError("Failed to fetch facility data.");
+    }
+  };
+
+  const handleViewClick = (facility) => {
+    setSelectedFacility(facility); // Set selected therapist data
+    setIsModalOpen(true); // Open the modal
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleAddClick = () => {
+    setNewTherapist({
+      firstName: '',
+      lastName: '',
+      email: '',
+      phoneNumber: '',
+      therapyType: '',
+      specialization: '',
+      address: ''
+    });
+    setIsAddModalOpen(true);
+  };
+
+  const closeAddModal = () => {
+    setIsAddModalOpen(false);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewTherapist((prev) => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleAddFacility = async () => {
+    try {
+      // Combine firstName and lastName to create a custom document ID
+      const docId = `${newTherapist.firstName}_${newTherapist.lastName}`;
+  
+      // Construct the therapist data with a fullName field
+      const therapistWithFullName = {
+        ...newTherapist,
+        fullName: `${newTherapist.firstName} ${newTherapist.lastName}` // Combine first and last name
+      };
+  
+      // Add the new therapist document with a custom ID
+      await setDoc(doc(db, "Users", "therapists", "newUserTherapist", docId), therapistWithFullName);
+      fetchTherapists(); // Refresh the therapist list after adding
+      closeAddModal();
+    } catch (error) {
+      console.error("Error adding therapist:", error);
+      setError("Failed to add therapist.");
     }
   };
 
@@ -118,7 +179,7 @@ export default function DevelopersFacilityListPage() {
           <a href="#" className="menu-item" onClick={() => navigate('/DevelopersDashboardPage')}>Dashboard</a>
           <a href="#" className="menu-item" onClick={() => navigate('/DevelopersFacilityListPage')}>Facilities</a>
           <a href="#" className="menu-item" onClick={() => navigate('/DevelopersApprovalPage')}>Approval</a>
-          <a href="#" className="menu-item">Announcements</a>                
+          <a href="#" className="menu-item" onClick={() => navigate('/DevelopersAnnouncementPage')}>Announcements</a> 
         </nav>
         <div className="logout">
           <a href="#" onClick={handleLogout}>Logout</a>
@@ -142,7 +203,7 @@ export default function DevelopersFacilityListPage() {
         <div className="header">
           <h2>Facility List</h2>
           <div className="actions">
-            <button className="btn-edit">EDIT</button>
+          <button className="btn-add" onClick={handleAddClick}>ADD</button>
           </div>
         </div>
         
@@ -157,18 +218,68 @@ export default function DevelopersFacilityListPage() {
             </tr>
           </thead>
           <tbody>
-            {parents.map((parent, index) => (
+            {facility.map((facility, index) => (
               <tr key={index}>
-                <td>{parent.name}</td>
-                <td>{parent.professionals}</td>
-                <td>{parent.subscribers}</td>
-                <td>{parent.status}</td> {/* Assuming there is a 'status' field */}
-                <td><a href={`/therapist/${index}`}>View</a></td>
+                <td>{facility.name}</td>
+                <td>{facility.professionals}</td>
+                <td>{facility.subscribers}</td>
+                <td>{facility.status}</td> {/* Assuming there is a 'status' field */}
+                <td><button onClick={() => handleViewClick(facility)}>View</button></td>
               </tr>
             ))}
           </tbody>
         </table>
       </main>
+
+            {/* Therapist Details Modal */}
+  {isModalOpen && selectedFacility && (
+  <div className="modal">
+    <div className="modal-content parent-modal">
+      <button className="modal-close" onClick={closeModal}>X</button>
+      
+      <div className="modal-header">
+        <img
+          src={selectedFacility.image}
+          alt="Facility Image"
+          className="parent-img"
+        />
+      </div>
+
+      <div className="modal-body">
+        <div className="modal-info-group">
+          <label>Facility Name</label>
+          <p>{selectedFacility.name}</p>
+        </div>
+        
+        <div className="modal-info-group">
+          <label>Email</label>
+          <p>{selectedFacility.email}</p>
+        </div>
+        
+        <div className="modal-info-group">
+          <label>Phone Number</label>
+          <p>{selectedFacility.phoneNumber}</p>
+        </div>
+
+        <div className="modal-info-group">
+          <label>Address</label>
+          <p>{selectedFacility.address}</p>
+        </div>
+
+        <div className="modal-info-group">
+          <label>Facility Description</label>
+          <p>{selectedFacility.description}</p>
+        </div>
+
+      </div>
+
+      <div className="modal-footer">
+        <button className="btn-update">UPDATE</button>
+        <button className="btn-delete">DELETE</button>
+      </div>
+    </div>
+  </div>
+)}
 
       {isProfileModalOpen && (
         <div className="modal">
@@ -211,10 +322,10 @@ export default function DevelopersFacilityListPage() {
               </div>
             </div>
 
-            <div className="modal-footer">
-              <button className="btn-update" onClick={handleUpdate}>UPDATE</button>
-              <button className="btn-cancel" onClick={() => setIsProfileModalOpen(false)}>CANCEL</button>
-            </div>
+           <div className="modal-footer">
+             <button className="btn-update" onClick={handleUpdate}>UPDATE</button>
+             <button className="btn-cancel" onClick={() => setIsProfileModalOpen(false)}>CANCEL</button>
+           </div>
           </div>
         </div>
       )}

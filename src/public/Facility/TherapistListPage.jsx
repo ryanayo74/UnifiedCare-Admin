@@ -12,6 +12,7 @@ export default function TherapistListPage() {
   const [facilityImage, setFacilityImage] = useState('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png'); // Default image
   const [facilityAddress, setFacilityAddress] = useState('123 Facility St.');
   const [error, setError] = useState(null);
+
   const [currentDocId, setCurrentDocId] = useState(null);
   const [therapists, setTherapists] = useState([]);
   const [selectedTherapist, setSelectedTherapist] = useState(null); // To hold the selected therapist data
@@ -30,27 +31,6 @@ export default function TherapistListPage() {
 
     fetchTherapists(); // Fetch therapists when component mounts
   }, []);
-
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (file && currentDocId) {
-      const storageRef = ref(storage, `facilityImages/${file.name}`);
-      try {
-        await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(storageRef);
-        const docRef = doc(db, "Users", "facility", "userFacility", currentDocId);
-        await updateDoc(docRef, { image: downloadURL });
-        setFacilityImage(downloadURL);
-        setError(null);
-      } catch (error) {
-        console.error("Error uploading image:", error);
-        setError("Failed to upload the image. Please try again.");
-      }
-    } else if (!currentDocId) {
-      console.error("No valid document ID found.");
-      setError("No valid document ID found to update.");
-    }
-  };
 
   const fetchFacilityData = async (email) => {
     try {
@@ -74,6 +54,27 @@ export default function TherapistListPage() {
     } catch (error) {
       console.error("Error fetching facility data:", error);
       setError("Failed to fetch facility data.");
+    }
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (file && currentDocId) {
+      const storageRef = ref(storage, `facilityImages/${file.name}`);
+      try {
+        await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(storageRef);
+        const docRef = doc(db, "Users", "facility", "userFacility", currentDocId);
+        await updateDoc(docRef, { image: downloadURL });
+        setFacilityImage(downloadURL);
+        setError(null);
+      } catch (error) {
+        console.error("Error uploading image:", error);
+        setError("Failed to upload the image. Please try again.");
+      }
+    } else if (!currentDocId) {
+      console.error("No valid document ID found.");
+      setError("No valid document ID found to update.");
     }
   };
 
@@ -126,7 +127,6 @@ export default function TherapistListPage() {
     }));
   };
 
-  
 
   const handleAddTherapist = async () => {
     try {
@@ -148,7 +148,6 @@ export default function TherapistListPage() {
       setError("Failed to add therapist.");
     }
   };
-  
   
 
   const handleFacilityImageClick = () => {
@@ -200,7 +199,7 @@ export default function TherapistListPage() {
           <h2>Therapist List</h2>
           <div className="actions">
           <button className="btn-add" onClick={handleAddClick}>ADD</button>
-            <button className="btn-edit">EDIT</button>
+          <button className="btn-edit">EDIT</button>
           </div>
         </div>
         
@@ -228,9 +227,8 @@ export default function TherapistListPage() {
         </table>
       </main>
 
-
       {/* Therapist Details Modal */}
-      {isModalOpen && selectedTherapist && (
+  {isModalOpen && selectedTherapist && (
   <div className="modal">
     <div className="modal-content parent-modal">
       <button className="modal-close" onClick={closeModal}>X</button>

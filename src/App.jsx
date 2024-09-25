@@ -11,6 +11,8 @@ import ChangePasswordPage from './public/ChangePasswordPage.jsx';
 import DevelopersFacilityListPage from './public/Developer/DevelopersFacilityListPage.jsx';
 import DevelopersDashboardPage from './public/Developer/DevelopersDashboardPage.jsx';
 import DevelopersApprovalPage from './public/Developer/DevelopersApprovalPage.jsx';
+import DevelopersAnnouncementPage from './public/Developer/DevelopersAnnouncementPage.jsx';
+
 
 
 // Admin Facility Pages
@@ -63,6 +65,15 @@ export default function App() {
           element={
             <ProtectedRoute>
               <DevelopersApprovalPage />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/DevelopersAnnouncementPage" 
+          element={
+            <ProtectedRoute>
+              <DevelopersAnnouncementPage />
             </ProtectedRoute>
           } 
         />

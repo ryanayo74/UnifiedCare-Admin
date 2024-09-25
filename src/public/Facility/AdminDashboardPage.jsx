@@ -17,10 +17,10 @@ function AdminDashboardPage() {
     const [facilityImage, setFacilityImage] = useState('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png');
     const [error, setError] = useState(null);
     const [currentDocId, setCurrentDocId] = useState(null);
-    const [facilityDescription, setFacilityDescription] = useState('We are the best clinic');  // New state for description
+    const [facilityDescription, setFacilityDescription] = useState('set your facility description');  // New state for description
     const [selectedImageFile, setSelectedImageFile] = useState(null);
   
-    const [facilityAddress, setFacilityAddress] = useState('123 Facility St.');
+    const [facilityAddress, setFacilityAddress] = useState('Set your facility address');
     const [isFacilityModalOpen, setIsFacilityModalOpen] = useState(false);
 
     const [totalUsers, setTotalUsers] = useState(0);
@@ -48,37 +48,28 @@ function AdminDashboardPage() {
         }
     }, [selectedYear, years]);
 
-    const fetchYears = async () => {
+    const fetchFacilityData = async (email) => {
         try {
-            const therapistSnapshot = await getDocs(collection(db, "Users", "therapists", "newUserTherapist"));
-            const parentSnapshot = await getDocs(collection(db, "Users", "parents", "newUserParent"));
-
-            const yearSet = new Set();
-
-            therapistSnapshot.forEach(doc => {
-                const userData = doc.data();
-                if (userData.createdAt) {
-                    const year = userData.createdAt.toDate().getFullYear();
-                    yearSet.add(year);
+            const querySnapshot = await getDocs(collection(db, "Users", "facility", "userFacility"));
+            let found = false;
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                if (data.email === email) {
+                    setFacilityName(data.name || 'Sample Facility');
+                    setFacilityImage(data.image || '/path-to-default-facility.jpg');
+                    setFacilityAddress(data.address || 'Set your facility address.');
+                    setCurrentDocId(doc.id);
+                    found = true;
                 }
             });
 
-            parentSnapshot.forEach(doc => {
-                const userData = doc.data();
-                if (userData.createdAt) {
-                    const year = userData.createdAt.toDate().getFullYear();
-                    yearSet.add(year);
-                }
-            });
-
-            const yearArray = Array.from(yearSet).sort((a, b) => a - b);
-            setYears(yearArray);
-            if (!yearArray.includes(selectedYear)) {
-                setSelectedYear(yearArray[0]); // Set the default selected year to the earliest year if the current year is not in the list
+            if (!found) {
+                console.error("No document found with this email.");
+                setError("No document found with this email.");
             }
         } catch (error) {
-            console.error("Error fetching years:", error);
-            setError("Failed to fetch years.");
+            console.error("Error fetching facility data:", error);
+            setError("Failed to fetch facility data.");
         }
     };
 
@@ -124,28 +115,46 @@ function AdminDashboardPage() {
         }
     };
 
-    const fetchFacilityData = async (email) => {
+    const handleFacilityImageClick = () => {
+        setIsFacilityModalOpen(true);
+    };
+
+    const closeFacilityModal = () => {
+        setIsFacilityModalOpen(false);
+        setSelectedImageFile(null);  // Clear selected file if modal is closed
+    };
+
+    const fetchYears = async () => {
         try {
-            const querySnapshot = await getDocs(collection(db, "Users", "facility", "userFacility"));
-            let found = false;
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                if (data.email === email) {
-                    setFacilityName(data.name || 'Sample Facility');
-                    setFacilityImage(data.image || '/path-to-default-facility.jpg');
-                    setFacilityAddress(data.address || '123 Facility St.');
-                    setCurrentDocId(doc.id);
-                    found = true;
+            const therapistSnapshot = await getDocs(collection(db, "Users", "therapists", "newUserTherapist"));
+            const parentSnapshot = await getDocs(collection(db, "Users", "parents", "newUserParent"));
+
+            const yearSet = new Set();
+
+            therapistSnapshot.forEach(doc => {
+                const userData = doc.data();
+                if (userData.createdAt) {
+                    const year = userData.createdAt.toDate().getFullYear();
+                    yearSet.add(year);
                 }
             });
 
-            if (!found) {
-                console.error("No document found with this email.");
-                setError("No document found with this email.");
+            parentSnapshot.forEach(doc => {
+                const userData = doc.data();
+                if (userData.createdAt) {
+                    const year = userData.createdAt.toDate().getFullYear();
+                    yearSet.add(year);
+                }
+            });
+
+            const yearArray = Array.from(yearSet).sort((a, b) => a - b);
+            setYears(yearArray);
+            if (!yearArray.includes(selectedYear)) {
+                setSelectedYear(yearArray[0]); // Set the default selected year to the earliest year if the current year is not in the list
             }
         } catch (error) {
-            console.error("Error fetching facility data:", error);
-            setError("Failed to fetch facility data.");
+            console.error("Error fetching years:", error);
+            setError("Failed to fetch years.");
         }
     };
 
@@ -231,15 +240,6 @@ function AdminDashboardPage() {
             }
         }
     };
-
-    const handleFacilityImageClick = () => {
-        setIsFacilityModalOpen(true);
-    };
-
-    const closeFacilityModal = () => {
-        setIsFacilityModalOpen(false);
-        setSelectedImageFile(null);  // Clear selected file if modal is closed
-    };
     
     const handleLogout = () => {
         localStorage.removeItem('isAuthenticated');
@@ -280,7 +280,9 @@ function AdminDashboardPage() {
                 </div>
 
                 <section className="dashboard">
+                
                     <div className="year-selector">
+
                         <label htmlFor="year">Select Year:</label>
                         <select id="year" value={selectedYear} onChange={handleYearChange}>
                             {years.map(year => (

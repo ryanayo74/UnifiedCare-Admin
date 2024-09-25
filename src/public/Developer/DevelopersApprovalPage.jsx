@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc} from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
-import '../../css/DevelopersApprovalPage.css';
+import '../../css/DeveloperCss/DevelopersApprovalPage.css';
 
 function DevelopersApprovalPage() {
   const navigate = useNavigate();
@@ -108,23 +108,37 @@ const handleImageUpload = (e) => {
     setIsModalOpen(false);
   };
 
-  const handleSaveFacilityChanges = async () => {
-    if (selectedFacility && selectedFacility.id) {
-      const docRef = doc(db, "Users", "facility", "pending", selectedFacility.id);
-      try {
-        await updateDoc(docRef, {
-          name: facilityName,
-          message: facilityMessage,
-          phone: facilityPhone,
-        });
-        alert("Facility information updated successfully!");
-        setIsModalOpen(false);
-      } catch (error) {
-        console.error("Error updating facility information:", error);
-        alert("Failed to update facility information.");
-      }
+  const handleApprove = async (facility) => {
+    try {
+      // Create a sanitized facility name to use as the document ID
+      const sanitizedFacilityName = facility.name.replace(/[^a-zA-Z0-9-_]/g, '');
+  
+      // Reference to the new facility in the userFacility collection using the sanitized facility name
+      const userFacilityRef = doc(db, "Users", "facility", "newUserFacility", sanitizedFacilityName);
+      
+      // Save facility details to the userFacility collection
+      await setDoc(userFacilityRef, {
+        name: facility.name,
+        email: facility.email,
+        phoneNumber: facility.phoneNumber,
+        password: 'admin123'
+      });
+      
+      // Remove the facility from the pending collection
+      const pendingRef = doc(db, "Users", "facility", "pending", facility.id);
+      await deleteDoc(pendingRef);
+  
+      // Update the state to remove the approved facility from the pendingUsers list
+      setPendingUsers(pendingUsers.filter(user => user.id !== facility.id));
+  
+      alert("Facility approved and moved to userFacility successfully.");
+    } catch (error) {
+      console.error("Error approving facility:", error);
+      alert("Failed to approve the facility.");
     }
   };
+  
+
 
   const handleReject = async (facilityId) => {
     const isConfirmed = window.confirm("Are you sure you want to delete this facility?");
@@ -182,10 +196,10 @@ const handleImageUpload = (e) => {
           <img src="https://i.ytimg.com/vi/CYcrmsdZuyw/sddefault.jpg" alt="UnifiedCare Logo" className="logo" />
         </div>
         <nav className="menu">
-        <a href="#" className="menu-item" onClick={() => navigate('/DevelopersDashboardPage')}>Dashboard</a>
+          <a href="#" className="menu-item" onClick={() => navigate('/DevelopersDashboardPage')}>Dashboard</a>
           <a href="#" className="menu-item" onClick={() => navigate('/DevelopersFacilityListPage')}>Facilities</a>
           <a href="#" className="menu-item" onClick={() => navigate('/DevelopersApprovalPage')}>Approval</a>
-          <a href="#" className="menu-item">Announcements</a> 
+          <a href="#" className="menu-item" onClick={() => navigate('/DevelopersAnnouncementPage')}>Announcements</a> 
         </nav>
         <div className="logout">
           <a href="#" onClick={handleLogout}>Logout</a>
@@ -226,7 +240,7 @@ const handleImageUpload = (e) => {
                   <td>{user.professionals}</td>
                   <td>{user.email}</td>
                   <td>
-                    <button className="approve-btn">✅</button>
+                    <button className="approve-btn" onClick={() => handleApprove(user)}>✅</button>
                     <button className="reject-btn" onClick={() => handleReject(user.id)}>❌</button>
                   </td>
                   <td>
@@ -241,33 +255,42 @@ const handleImageUpload = (e) => {
         {/* Facility Details Modal */}
         {isModalOpen && selectedFacility && (
           <div className="modal">
-            <div className="modal-content">
-              <button className="close-modal-btn" onClick={closeModal}>X</button>
-              <h2>Edit Facility Details</h2>
-              <div>
-                <label>Facility Name:</label>
-                <input
-                  type="text"
-                  value={facilityName}
-                  onChange={(e) => setFacilityName(e.target.value)}
-                />
-              </div>
-              <div>
-                <label>Facility Message:</label>
-                <textarea
-                  value={facilityMessage}
-                  onChange={(e) => setFacilityMessage(e.target.value)}
-                />
-              </div>
-              <div>
-                <label>Facility Phone Number:</label>
-                <input
-                  type="text"
-                  value={facilityPhone}
-                  onChange={(e) => setFacilityPhone(e.target.value)}
-                />
-              </div>
-              <button className="save-btn" onClick={handleSaveFacilityChanges}>Save Changes</button>
+          <div className="modal-content parent-modal">
+            <button className="modal-close" onClick={closeModal}>X</button>
+            <h2>Facility Details</h2>
+            <div className="modal-header">
+            <img
+              src={selectedFacility.image}
+              alt="Facility Image"
+              className="parent-img"
+            />
+            </div>
+            <div className="modal-body">
+        <div className="modal-info-group">
+          <label>Facility Name</label>
+          <p>{facilityName}</p>
+        </div>
+        
+        <div className="modal-info-group">     
+          <label>Phone Number</label>
+          <p>{selectedFacility.phoneNumber}</p>
+        </div>
+
+        <div className="modal-info-group">
+          <label>Facility Message</label>
+          <p>{facilityMessage}</p>
+        </div>
+
+        <div className="modal-info-group">
+          <label>Address</label>
+          <p>{selectedFacility.email}</p>
+        </div>
+
+        <div className="modal-info-group">
+          <label>Facility Description</label>
+          <p>{selectedFacility.description}</p>
+        </div>
+        </div>    
             </div>
           </div>
         )}
