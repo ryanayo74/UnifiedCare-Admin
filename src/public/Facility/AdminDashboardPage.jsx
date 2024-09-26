@@ -18,7 +18,7 @@ function AdminDashboardPage() {
     const [facilityImage, setFacilityImage] = useState('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png');
     const [error, setError] = useState(null);
     const [currentDocId, setCurrentDocId] = useState(null);
-    const [facilityDescription, setFacilityDescription] = useState('set your facility description');  // New state for description
+    const [facilityDescription, setFacilityDescription] = useState(''); 
     const [selectedImageFile, setSelectedImageFile] = useState(null);
   
     const [facilityAddress, setFacilityAddress] = useState('Set your facility address');
@@ -58,6 +58,7 @@ function AdminDashboardPage() {
                 if (data.email === email) {
                     setFacilityName(data.name || 'Sample Facility');
                     setFacilityImage(data.image || '/path-to-default-facility.jpg');
+                    setFacilityDescription(data.description || 'Set your facility description');
                     setFacilityAddress(data.address || 'Set your facility address.');
                     setCurrentDocId(doc.id);
                     found = true;

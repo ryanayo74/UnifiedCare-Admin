@@ -12,7 +12,9 @@ function AnnouncementsPage() {
     const [facilityName, setFacilityName] = useState('Facility');
     const [facilityImage, setFacilityImage] = useState('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png');
     const [facilityAddress, setFacilityAddress] = useState('123 Facility St.');
+    const [facilityDescription, setFacilityDescription] = useState(''); 
     const [isFacilityModalOpen, setIsFacilityModalOpen] = useState(false);
+    const [selectedImageFile, setSelectedImageFile] = useState(null);
     const [error, setError] = useState(null);
     const [currentDocId, setCurrentDocId] = useState(null);
     const [message, setMessage] = useState('');
@@ -40,6 +42,7 @@ function AnnouncementsPage() {
                 if (data.email === email) {
                     setFacilityName(data.name || 'Sample Facility');
                     setFacilityImage(data.image || '/path-to-default-facility.jpg');
+                    setFacilityDescription(data.description || 'Set your facility description');
                     setFacilityAddress(data.address || 'Set your facility address.');
                     setCurrentDocId(doc.id);
                     found = true;
@@ -216,54 +219,62 @@ function AnnouncementsPage() {
             </div>
 
             
-      {/* Modal for facility image and details */}
-      {isFacilityModalOpen && (
-        <div className="modal">
-          <div className="modal-content">
-            <div className="modal-header">
-              <img 
-                src={facilityImage} 
-                alt="Facility" 
-                className="modal-facility-img"
-                onClick={() => document.getElementById('imageUpload').click()}
-              />
-              <input 
-                type="file" 
-                id="imageUpload" 
-                accept="image/*"
-                style={{ display: 'none' }} 
-                onChange={handleImageUpload}
-              />
-            </div>
+            {/* Modal for facility image and details */}
+            {isFacilityModalOpen && (
+                    <div className="modal">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <img
+                                    src={facilityImage}
+                                    alt="Facility"
+                                    className="modal-facility-img"
+                                    onClick={() => document.getElementById('imageUpload').click()}
+                                />
+                                <input
+                                    type="file"
+                                    id="imageUpload"
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    onChange={handleImageUpload}
+                                />
+                            </div>
 
-            <div className="modal-body">
-              <div className="modal-section">
-                <label>Facility Name</label>
-                <input type="text" value={facilityName} readOnly />
-              </div>
+                            <div className="modal-body">
+                                <div className="modal-section">
+                                    <label>Facility Name</label>
+                                    <input 
+                                        type="text" 
+                                        value={facilityName} 
+                                        onChange={(e) => setFacilityName(e.target.value)}  // Allow editing of Facility Name
+                                    />
+                                </div>
 
-              <div className="modal-section description">
-                <label>Facility Description</label>
-                <textarea readOnly>
-                  We are the best clinic
-                </textarea>
-              </div>
+                                <div className="modal-section description">
+                                    <label>Facility Description</label>
+                                    <textarea 
+                                        value={facilityDescription} 
+                                        onChange={(e) => setFacilityDescription(e.target.value)}  // Allow editing of Description
+                                    />
+                                </div>
 
-              <div className="modal-section">
-                <label>Facility Address</label>
-                <input type="text" value={facilityAddress} readOnly />
-              </div>
-            </div>
+                                <div className="modal-section">
+                                    <label>Facility Address</label>
+                                    <input 
+                                        type="text" 
+                                        value={facilityAddress} 
+                                        onChange={(e) => setFacilityAddress(e.target.value)}  // Allow editing of Address
+                                    />
+                                </div>
+                            </div>
 
-            <div className="modal-footer">
-              <button className="btn-update">UPDATE</button>
-              <button className="btn-cancel" onClick={closeFacilityModal}>CANCEL</button>
-            </div>
-          </div>
+                            <div className="modal-footer">
+                                <button className="btn-update" onClick={handleUpdateClick}>UPDATE</button>
+                                <button className="btn-cancel" onClick={closeFacilityModal}>CANCEL</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
         </div>
-      )}
-      </div>
-  );
+    );
 }
-
 export default AnnouncementsPage;

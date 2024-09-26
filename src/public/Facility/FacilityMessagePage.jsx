@@ -15,6 +15,8 @@ function FacilityMessagePage() {
   const [facilityImage, setFacilityImage] = useState('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png');
   const [facilityAddress, setFacilityAddress] = useState('123 Facility St.');
   const [isFacilityModalOpen, setIsFacilityModalOpen] = useState(false);
+  const [facilityDescription, setFacilityDescription] = useState(''); 
+  const [selectedImageFile, setSelectedImageFile] = useState(null);
   const [error, setError] = useState(null);
   const [currentDocId, setCurrentDocId] = useState(null);
   const [users, setUsers] = useState([]);
@@ -45,62 +47,101 @@ function FacilityMessagePage() {
     fetchUsers();
   }, []);
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (file && currentDocId) {
-      const storageRef = ref(storage, `facilityImages/${file.name}`);
-      try {
-        await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(storageRef);
-        const docRef = doc(db, "Users", "facility", "userFacility", currentDocId);
-        await updateDoc(docRef, { image: downloadURL });
-        setFacilityImage(downloadURL);
-        setError(null);
-      } catch (error) {
-        console.error("Error uploading image:", error);
-        setError("Failed to upload the image. Please try again.");
-      }
-    } else if (!currentDocId) {
-      console.error("No valid document ID found.");
-      setError("No valid document ID found to update.");
-    }
-  };
-
   const fetchFacilityData = async (email) => {
     try {
-      const querySnapshot = await getDocs(collection(db, "Users", "facility", "userFacility"));
-      let found = false;
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data.email === email) {
-          setFacilityName(data.name || 'Sample Facility');
-          setFacilityImage(data.image || '/path-to-default-facility.jpg');
-          setFacilityAddress(data.address || '123 Facility St.');
-          setCurrentDocId(doc.id);
-          found = true;
-        }
-      });
+        const querySnapshot = await getDocs(collection(db, "Users", "facility", "userFacility"));
+        let found = false;
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            if (data.email === email) {
+                setFacilityName(data.name || 'Sample Facility');
+                setFacilityImage(data.image || '/path-to-default-facility.jpg');
+                setFacilityDescription(data.description || 'Set your facility description');
+                setFacilityAddress(data.address || 'Set your facility address.');
+                setCurrentDocId(doc.id);
+                found = true;
+            }
+        });
 
-      if (!found) {
-        console.error("No document found with this email.");
-        setError("No document found with this email.");
-      }
+        if (!found) {
+            console.error("No document found with this email.");
+            setError("No document found with this email.");
+        }
     } catch (error) {
-      console.error("Error fetching facility data:", error);
-      setError("Failed to fetch facility data.");
+        console.error("Error fetching facility data:", error);
+        setError("Failed to fetch facility data.");
     }
-  };
+};
+
+const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        setSelectedImageFile(file);  // Store the selected image file in state
+        const imagePreviewURL = URL.createObjectURL(file);
+        setFacilityImage(imagePreviewURL);  // Optionally, show a preview of the selected image
+        setError(null);
+    }
+};
+
+const handleUpdateClick = async () => {
+    try {
+        let updatedData = {
+            name: facilityName,
+            description: facilityDescription,
+            address: facilityAddress,
+        };
+
+        if (selectedImageFile && currentDocId) {
+            // Upload image to Firebase Storage
+            const storageRef = ref(storage, `facilityImages/${selectedImageFile.name}`);
+            await uploadBytes(storageRef, selectedImageFile);
+            const downloadURL = await getDownloadURL(storageRef);
+            updatedData.image = downloadURL;  // Add image URL to updated data
+        }
+
+        // Update Firestore document with new data (name, description, address, and image if available)
+        if (currentDocId) {
+            const docRef = doc(db, "Users", "facility", "userFacility", currentDocId);
+            await updateDoc(docRef, updatedData);
+
+            setFacilityImage(updatedData.image || facilityImage);  // If image updated, reflect it
+            setError(null);
+            setIsFacilityModalOpen(false);  // Close the modal
+            setSelectedImageFile(null);  // Clear the selected file after update
+
+            // Trigger SweetAlert success message
+            Swal.fire({
+                icon: 'success',
+                title: 'Profile Updated!',
+                text: 'Your facility information has been successfully updated.',
+                confirmButtonText: 'Okay'
+            });
+        }
+    } catch (error) {
+        console.error("Error updating facility data:", error);
+        setError("Failed to update the facility information. Please try again.");
+
+        // Trigger SweetAlert error message
+        Swal.fire({
+            icon: 'error',
+            title: 'Update Failed',
+            text: 'There was an error updating your facility information.',
+            confirmButtonText: 'Try Again'
+        });
+    }
+};
+
+const handleFacilityImageClick = () => {
+    setIsFacilityModalOpen(true);
+};
+
+const closeFacilityModal = () => {
+    setIsFacilityModalOpen(false);
+    setSelectedImageFile(null);  // Clear selected file if modal is closed
+};
 
   const handleUserClick = (userId) => {
     navigate(`/messages/${userId}?currentUserId=${currentUserId}`);
-  };
-
-  const handleFacilityImageClick = () => {
-    setIsFacilityModalOpen(true); 
-  };
-
-  const closeFacilityModal = () => {
-    setIsFacilityModalOpen(false);
   };
 
   const handleLogout = () => {
@@ -164,53 +205,62 @@ function FacilityMessagePage() {
       </main>
 
 
-{/* Modal for facility image and details */}
-      {isFacilityModalOpen && (
-        <div className="modal">
-          <div className="modal-content">
-            <div className="modal-header">
-              <img 
-                src={facilityImage} 
-                alt="Facility" 
-                className="modal-facility-img"
-                onClick={() => document.getElementById('imageUpload').click()}
-              />
-              <input 
-                type="file" 
-                id="imageUpload" 
-                accept="image/*"
-                style={{ display: 'none' }} 
-                onChange={handleImageUpload}
-              />
-            </div>
+           {/* Modal for facility image and details */}
+                {isFacilityModalOpen && (
+                    <div className="modal">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <img
+                                    src={facilityImage}
+                                    alt="Facility"
+                                    className="modal-facility-img"
+                                    onClick={() => document.getElementById('imageUpload').click()}
+                                />
+                                <input
+                                    type="file"
+                                    id="imageUpload"
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    onChange={handleImageUpload}
+                                />
+                            </div>
 
-            <div className="modal-body">
-              <div className="modal-section">
-                <label>Facility Name</label>
-                <input type="text" value={facilityName} readOnly />
-              </div>
+                            <div className="modal-body">
+                                <div className="modal-section">
+                                    <label>Facility Name</label>
+                                    <input 
+                                        type="text" 
+                                        value={facilityName} 
+                                        onChange={(e) => setFacilityName(e.target.value)}  // Allow editing of Facility Name
+                                    />
+                                </div>
 
-              <div className="modal-section description">
-                <label>Facility Description</label>
-                <textarea readOnly>
-                  We are the best clinic
-                </textarea>
-              </div>
+                                <div className="modal-section description">
+                                    <label>Facility Description</label>
+                                    <textarea 
+                                        value={facilityDescription} 
+                                        onChange={(e) => setFacilityDescription(e.target.value)}  // Allow editing of Description
+                                    />
+                                </div>
 
-              <div className="modal-section">
-                <label>Facility Address</label>
-                <input type="text" value={facilityAddress} readOnly />
-              </div>
-            </div>
+                                <div className="modal-section">
+                                    <label>Facility Address</label>
+                                    <input 
+                                        type="text" 
+                                        value={facilityAddress} 
+                                        onChange={(e) => setFacilityAddress(e.target.value)}  // Allow editing of Address
+                                    />
+                                </div>
+                            </div>
 
-            <div className="modal-footer">
-              <button className="btn-update">UPDATE</button>
-              <button className="btn-cancel" onClick={closeFacilityModal}>CANCEL</button>
-            </div>
-          </div>
+                            <div className="modal-footer">
+                                <button className="btn-update" onClick={handleUpdateClick}>UPDATE</button>
+                                <button className="btn-cancel" onClick={closeFacilityModal}>CANCEL</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
         </div>
-      )}
-      </div>
-  );
+    );
 }
 export default FacilityMessagePage;
