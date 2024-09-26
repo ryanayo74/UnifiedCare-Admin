@@ -4,6 +4,7 @@ import { collection, getDocs, updateDoc, doc, deleteDoc } from "firebase/firesto
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
 import loginImage from '../../assets/unifiedcarelogo.png';
+import Swal from 'sweetalert2';
 import '../../css/AdminParentsListPage.css';
 
 export default function DevelopersFacilityListPage() {
@@ -99,28 +100,48 @@ export default function DevelopersFacilityListPage() {
 
   const handleUpdate = async () => {
     if (currentDocId) {
-      try {
-        const docRef = doc(db, "Users", "adminDev", "AdminDevUsers", currentDocId);
-        await updateDoc(docRef, {
-          name: developerName,
-          profileDescription: profileDescription
-        });
+        try {
+            const docRef = doc(db, "Users", "adminDev", "AdminDevUsers", currentDocId);
+            // Update the profile information
+            await updateDoc(docRef, {
+                name: developerName,
+                profileDescription: profileDescription
+            });
 
-        if (newProfileImage) {
-          const storageRef = ref(storage, `developerProfiles/${newProfileImage.name}`);
-          await uploadBytes(storageRef, newProfileImage);
-          const downloadURL = await getDownloadURL(storageRef);
-          await updateDoc(docRef, { profileImage: downloadURL });
+            // Handle image upload if a new image was selected
+            if (newProfileImage) {
+                const storageRef = ref(storage, `developerProfiles/${newProfileImage.name}`);
+                await uploadBytes(storageRef, newProfileImage);
+                const downloadURL = await getDownloadURL(storageRef);
+                await updateDoc(docRef, { profileImage: downloadURL });
+            }
+
+            // Reset new image state after updating
+            setNewProfileImage(null);
+            setIsProfileModalOpen(false); // Close modal after updating
+            setError(null);
+
+            // Show SweetAlert after successful update
+            Swal.fire({
+                title: 'Profile Updated',
+                text: 'Your profile information have been successfully updated.',
+                icon: 'success',
+                confirmButtonText: 'OK'
+            });
+
+        } catch (error) {
+            setError("Failed to update profile information.");
+
+            // Show error SweetAlert if updating fails
+            Swal.fire({
+                title: 'Update Failed',
+                text: 'An error occurred while updating your profile. Please try again.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
         }
-
-        setNewProfileImage(null);
-        setIsProfileModalOpen(false);
-        setError(null);
-      } catch (error) {
-        setError("Failed to update profile information.");
-      }
     }
-  };
+};
 
   const handleDeleteFacility = async () => {
     if (selectedFacility && selectedFacility.id) {
@@ -136,8 +157,8 @@ export default function DevelopersFacilityListPage() {
         closeDeleteConfirm();
         closeModal();
         
-        // Set success message
-        setSuccessMessage('Facility deleted successfully!');
+        // Show success message using SweetAlert
+        Swal("Deleted!", "Facility deleted successfully!", "success");
       } catch (error) {
         console.error("Error deleting facility:", error);
         setError("Failed to delete facility.");
@@ -160,9 +181,6 @@ export default function DevelopersFacilityListPage() {
   const closeSuccessModal = () => {
     setSuccessMessage(''); // Reset success message
   };
-  
-  
-  
 
   const handleLogout = () => {
     localStorage.removeItem('isAuthenticated');
@@ -329,17 +347,18 @@ export default function DevelopersFacilityListPage() {
         </div>
       )}
 
-        {isDeleteConfirmOpen && (
-          <div className="confirmation-modal">
-            <div className="modal-content">
-              <h3>Are you sure you want to delete this facility?</h3>
-              <div className="modal-footer">
-                <button className="btn-yes" onClick={handleDeleteFacility}>Yes</button>
-                <button className="btn-no" onClick={closeDeleteConfirm}>No</button>
-              </div>
+
+      {isDeleteConfirmOpen && (
+        <div className="confirmation-modal">
+          <div className="modal-content">
+            <h3>Are you sure you want to delete this facility?</h3>
+            <div className="modal-footer">
+              <button className="btn-yes" onClick={handleDeleteFacility}>Yes</button>
+              <button className="btn-no" onClick={closeDeleteConfirm}>No</button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
               {/* Loading Modal */}
       {isLoading && (

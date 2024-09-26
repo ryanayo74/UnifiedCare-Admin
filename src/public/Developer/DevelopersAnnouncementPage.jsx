@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, updateDoc, doc, setDoc} from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
+import Swal from 'sweetalert2'; 
 import loginImage from '../../assets/unifiedcarelogo.png';
 import '../../css/DeveloperCss/DevelopersAnnouncementPage.css'; // You can create this file for styling
 
@@ -80,7 +81,7 @@ function DevelopersAnnouncementsPage() {
                     name: developerName,
                     profileDescription: profileDescription
                 });
-                
+    
                 // Handle image upload if a new image was selected
                 if (newProfileImage) {
                     const storageRef = ref(storage, `developerProfiles/${newProfileImage.name}`);
@@ -88,13 +89,30 @@ function DevelopersAnnouncementsPage() {
                     const downloadURL = await getDownloadURL(storageRef);
                     await updateDoc(docRef, { profileImage: downloadURL });
                 }
-
+    
                 // Reset new image state after updating
                 setNewProfileImage(null);
                 setIsProfileModalOpen(false); // Close modal after updating
                 setError(null);
+    
+                // Show SweetAlert after successful update
+                Swal.fire({
+                    title: 'Profile Updated',
+                    text: 'Your profile information have been successfully updated.',
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                });
+    
             } catch (error) {
                 setError("Failed to update profile information.");
+    
+                // Show error SweetAlert if updating fails
+                Swal.fire({
+                    title: 'Update Failed',
+                    text: 'An error occurred while updating your profile. Please try again.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
             }
         }
     };

@@ -6,6 +6,7 @@ import { db, storage } from '../../config/firebase';
 import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, PointElement, LineElement, Legend, Tooltip } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { Line } from 'react-chartjs-2';
+import Swal from 'sweetalert2'; 
 import loginImage from '../../assets/unifiedcarelogo.png';
 import '../../css/DeveloperCss/DevelopersDashboardPage.css';
 
@@ -79,7 +80,7 @@ function DevelopersDashboardPage() {
                     name: developerName,
                     profileDescription: profileDescription
                 });
-
+    
                 // Handle image upload if a new image was selected
                 if (newProfileImage) {
                     const storageRef = ref(storage, `developerProfiles/${newProfileImage.name}`);
@@ -87,13 +88,30 @@ function DevelopersDashboardPage() {
                     const downloadURL = await getDownloadURL(storageRef);
                     await updateDoc(docRef, { profileImage: downloadURL });
                 }
-
+    
                 // Reset new image state after updating
                 setNewProfileImage(null);
                 setIsProfileModalOpen(false); // Close modal after updating
                 setError(null);
+    
+                // Show SweetAlert after successful update
+                Swal.fire({
+                    title: 'Profile Updated',
+                    text: 'Your profile information have been successfully updated.',
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                });
+    
             } catch (error) {
                 setError("Failed to update profile information.");
+    
+                // Show error SweetAlert if updating fails
+                Swal.fire({
+                    title: 'Update Failed',
+                    text: 'An error occurred while updating your profile. Please try again.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
             }
         }
     };

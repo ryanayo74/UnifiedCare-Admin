@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, updateDoc, doc, setDoc} from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
+import Swal from 'sweetalert2';
 import '../../css/FacilityMessagePage.css';
 
 const currentUserId = "currentLoggedInUserId";

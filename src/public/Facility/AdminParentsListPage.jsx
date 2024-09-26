@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
+import Swal from 'sweetalert2';
 import '../../css/AdminParentsListPage.css';
 
 export default function AdminParentsListPage() {

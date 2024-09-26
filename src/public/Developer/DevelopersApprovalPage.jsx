@@ -4,6 +4,7 @@ import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc} from "firebase/
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
 import loginImage from '../../assets/unifiedcarelogo.png';
+import Swal from 'sweetalert2';
 import '../../css/DeveloperCss/DevelopersApprovalPage.css';
 
 function DevelopersApprovalPage() {
@@ -80,7 +81,7 @@ function DevelopersApprovalPage() {
                 name: developerName,
                 profileDescription: profileDescription
             });
-            
+
             // Handle image upload if a new image was selected
             if (newProfileImage) {
                 const storageRef = ref(storage, `developerProfiles/${newProfileImage.name}`);
@@ -93,8 +94,25 @@ function DevelopersApprovalPage() {
             setNewProfileImage(null);
             setIsProfileModalOpen(false); // Close modal after updating
             setError(null);
+
+            // Show SweetAlert after successful update
+            Swal.fire({
+                title: 'Profile Updated',
+                text: 'Your profile information have been successfully updated.',
+                icon: 'success',
+                confirmButtonText: 'OK'
+            });
+
         } catch (error) {
             setError("Failed to update profile information.");
+
+            // Show error SweetAlert if updating fails
+            Swal.fire({
+                title: 'Update Failed',
+                text: 'An error occurred while updating your profile. Please try again.',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
         }
     }
 };
@@ -137,55 +155,93 @@ const handleImageUpload = (e) => {
   };
 
   const handleApprove = async (facility) => {
-    try {
-      // Create a sanitized facility name to use as the document ID
-      const sanitizedFacilityName = facility.name.replace(/[^a-zA-Z0-9-_]/g, '');
+    Swal.fire({
+      title: 'Approve this facility?',
+      text: `Are you sure you want to approve ${facility.name}?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, approve it!',
+      cancelButtonText: 'No, cancel',
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          // Create a sanitized facility name to use as the document ID
+          const sanitizedFacilityName = facility.name.replace(/[^a-zA-Z0-9-_]/g, '');
   
-      // Reference to the new facility in the userFacility collection using the sanitized facility name
-      const userFacilityRef = doc(db, "Users", "facility", "newUserFacility", sanitizedFacilityName);
-      
-      // Save facility details to the userFacility collection
-      await setDoc(userFacilityRef, {
-        name: facility.name,
-        email: facility.email,
-        phoneNumber: facility.phoneNumber,
-        password: 'admin123'
-      });
-      
-      // Remove the facility from the pending collection
-      const pendingRef = doc(db, "Users", "facility", "pending", facility.id);
-      await deleteDoc(pendingRef);
+          // Reference to the new facility in the userFacility collection
+          const userFacilityRef = doc(db, "Users", "facility", "newUserFacility", sanitizedFacilityName);
   
-      // Update the state to remove the approved facility from the pendingUsers list
-      setPendingUsers(pendingUsers.filter(user => user.id !== facility.id));
+          // Save facility details to the userFacility collection
+          await setDoc(userFacilityRef, {
+            name: facility.name,
+            email: facility.email,
+            phoneNumber: facility.phoneNumber,
+            password: 'admin123'
+          });
   
-      alert("Facility approved and moved to userFacility successfully.");
-    } catch (error) {
-      console.error("Error approving facility:", error);
-      alert("Failed to approve the facility.");
-    }
-  };
+          // Remove the facility from the pending collection
+          const pendingRef = doc(db, "Users", "facility", "pending", facility.id);
+          await deleteDoc(pendingRef);
   
-
+          // Update the state to remove the approved facility from the pendingUsers list
+          setPendingUsers(pendingUsers.filter(user => user.id !== facility.id));
+  
+          Swal.fire({
+            title: 'Approved!',
+            text: `${facility.name} has been approved successfully.`,
+            icon: 'success',
+          });
+        } catch (error) {
+          console.error("Error approving facility:", error);
+          Swal.fire({
+            title: 'Error!',
+            text: 'Failed to approve the facility. Please try again.',
+            icon: 'error',
+          });
+        }
+      }
+    });
+  };  
 
   const handleReject = async (facilityId) => {
-    const isConfirmed = window.confirm("Are you sure you want to delete this facility?");
-
-    if (isConfirmed) {
-      try {
-        const docRef = doc(db, "Users", "facility", "pending", facilityId);
-        await deleteDoc(docRef);
-
-        setPendingUsers(pendingUsers.filter(user => user.id !== facilityId));
-        alert("Facility rejected and deleted successfully.");
-      } catch (error) {
-        console.error("Error rejecting and deleting facility:", error);
-        alert("Failed to reject and delete the facility.");
+    Swal.fire({
+      title: 'Are you sure?',
+      text: 'Do you really want to reject this facility? This action cannot be undone!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, reject it!',
+      cancelButtonText: 'No, cancel',
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const docRef = doc(db, "Users", "facility", "pending", facilityId);
+          await deleteDoc(docRef);
+  
+          setPendingUsers(pendingUsers.filter(user => user.id !== facilityId));
+  
+          Swal.fire({
+            title: 'Rejected!',
+            text: 'The facility has been rejected and deleted successfully.',
+            icon: 'success',
+          });
+        } catch (error) {
+          console.error("Error rejecting and deleting facility:", error);
+          Swal.fire({
+            title: 'Error!',
+            text: 'Failed to reject and delete the facility. Please try again.',
+            icon: 'error',
+          });
+        }
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        Swal.fire({
+          title: 'Cancelled',
+          text: 'Facility rejection has been cancelled.',
+          icon: 'info',
+        });
       }
-    } else {
-      alert("Deletion cancelled.");
-    }
+    });
   };
+  
 
   const fetchPendingUsers = async () => {
     try {

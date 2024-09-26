@@ -4,6 +4,7 @@ import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
 import { Bar } from 'react-chartjs-2';
+import Swal from 'sweetalert2';
 import loginImage from '../../assets/unifiedcarelogo.png';
 import '../../css/AdminDashboardPage.css';
 
@@ -108,10 +109,26 @@ function AdminDashboardPage() {
                 setError(null);
                 setIsFacilityModalOpen(false);  // Close the modal
                 setSelectedImageFile(null);  // Clear the selected file after update
+
+                // Trigger SweetAlert success message
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Profile Updated!',
+                    text: 'Your facility information has been successfully updated.',
+                    confirmButtonText: 'Okay'
+                });
             }
         } catch (error) {
             console.error("Error updating facility data:", error);
             setError("Failed to update the facility information. Please try again.");
+
+            // Trigger SweetAlert error message
+            Swal.fire({
+                icon: 'error',
+                title: 'Update Failed',
+                text: 'There was an error updating your facility information.',
+                confirmButtonText: 'Try Again'
+            });
         }
     };
 
@@ -279,10 +296,8 @@ function AdminDashboardPage() {
                     {error && <p className="error">{error}</p>}
                 </div>
 
-                <section className="dashboard">
-                
+                <section className="dashboard">         
                     <div className="year-selector">
-
                         <label htmlFor="year">Select Year:</label>
                         <select id="year" value={selectedYear} onChange={handleYearChange}>
                             {years.map(year => (
