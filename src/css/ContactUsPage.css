@@ -9,6 +9,7 @@
     padding: 20px;
     color: #fff;
     height: 100vh;
+    box-sizing: border-box; /* Ensure padding doesn't affect height */
 }
 
 header {
@@ -16,8 +17,10 @@ header {
     justify-content: space-between;
     align-items: center;
     padding: 20px 40px;
-    background-color:#b47c5f;
-  }
+    background-color: #b47c5f;
+    width: 100%;
+    box-sizing: border-box;
+}
 
 .logo {
     height: 50px;
@@ -49,55 +52,23 @@ header {
     justify-content: space-between;
     width: 80%;
     margin-top: 30px;
+    flex-wrap: wrap; /* Allow wrapping for smaller screens */
 }
 
-.contact-form {
-    background-color: #fff;
+.contact-form{
+    background-color: #ffffff;
     color: #000;
     padding: 20px;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     width: 45%;
-}
-
-.form-group {
+    box-sizing: border-box; /* Ensure padding doesn't affect width */
     margin-bottom: 20px;
 }
 
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-}
-
-.form-group input, .form-group textarea {
+.contact-form {
     width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 16px;
-}
-
-.form-group textarea {
-    resize: vertical;
-    height: 100px;
-}
-
-.submit-button {
-    background-color: #000;
-    color: #fff;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
-    width: 100%;
-}
-
-.contact-info {
-    width: 45%;
-    padding: 20px;
+    max-width: 600px;
 }
 
 .contact-info h2 {
@@ -114,4 +85,115 @@ header {
 .contact-info span {
     margin-right: 10px;
     font-size: 24px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input, .form-group textarea {
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+    resize: none; /* Prevents resizing */
+}
+
+.form-group textarea {
+    resize: vertical;
+    height: 150px;
+    resize: none; /* Prevents resizing */
+}
+
+.submit-button {
+    background-color: #000;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    width: 100%;
+}
+
+.us-text {
+    color: black;
+}
+
+
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    header {
+        flex-direction: column;
+        text-align: center;
+        padding: 10px;
+    }
+
+    .nav {
+        flex-direction: column;
+        margin-top: 10px;
+    }
+
+    .nav-item {
+        margin: 10px 0;
+    }
+
+    .contact-form-container {
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+    }
+
+    .contact-form, .contact-info {
+        width: 90%;
+        margin: 100px 0;
+    }
+
+    .contact-info h2 {
+        font-size: 24px;
+    }
+
+    .contact-info p {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    header {
+        padding: 10px;
+    }
+
+    .nav-item {
+        font-size: 14px;
+    }
+
+    .contact-form, .contact-info {
+        padding: 15px;
+        width: 95%;
+    }
+
+    .contact-info h2 {
+        font-size: 20px;
+    }
+
+    .contact-info p {
+        font-size: 14px;
+    }
+
+    .form-group input, .form-group textarea {
+        font-size: 14px;
+    }
+
+    .submit-button {
+        font-size: 14px;
+        padding: 8px 15px;
+    }
 }

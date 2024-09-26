@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc} from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
+import loginImage from '../../assets/unifiedcarelogo.png';
 import '../../css/DeveloperCss/DevelopersApprovalPage.css';
 
 function DevelopersApprovalPage() {
@@ -22,6 +23,12 @@ function DevelopersApprovalPage() {
   const [facilityName, setFacilityName] = useState('');
   const [facilityMessage, setFacilityMessage] = useState('');
   const [facilityPhone, setFacilityPhone] = useState('');
+
+    // New state for add button modal
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [newFacilityName, setNewFacilityName] = useState('');
+    const [newFacilityEmail, setNewFacilityEmail] = useState('');
+    const [newFacilityPhone, setNewFacilityPhone] = useState('');
 
   useEffect(() => {
     const email = localStorage.getItem('adminEmail');
@@ -108,6 +115,27 @@ const handleImageUpload = (e) => {
     setIsModalOpen(false);
   };
 
+  const handleAddFacility = () => {
+    // Open the blank modal for adding a new facility
+    setIsAddModalOpen(true);
+  };
+
+  const closeAddModal = () => {
+    // Close the modal and reset inputs
+    setIsAddModalOpen(false);
+    setNewFacilityName('');
+    setNewFacilityEmail('');
+    setNewFacilityPhone('');
+  };
+
+  const handleSaveNewFacility = () => {
+    // Logic to save new facility (You can implement the save functionality here)
+    console.log("Saving new facility:", newFacilityName, newFacilityEmail, newFacilityPhone);
+
+    // Close the modal after saving
+    closeAddModal();
+  };
+
   const handleApprove = async (facility) => {
     try {
       // Create a sanitized facility name to use as the document ID
@@ -191,9 +219,10 @@ const handleImageUpload = (e) => {
 
   return (
     <div className="dashboard-container">
-      <aside className="sidebar">
+        <aside className="sidebar">
         <div className="logo-container">
-          <img src="https://i.ytimg.com/vi/CYcrmsdZuyw/sddefault.jpg" alt="UnifiedCare Logo" className="logo" />
+          <img src={loginImage} alt="Logo" />
+          <h2>UnifiedCare</h2>
         </div>
         <nav className="menu">
           <a href="#" className="menu-item" onClick={() => navigate('/DevelopersDashboardPage')}>Dashboard</a>
@@ -206,7 +235,7 @@ const handleImageUpload = (e) => {
         </div>
       </aside>
 
-      <div className="main-content">
+      <main className="main-content">
         <div className="facility-info">
           <img
             src={profileImage}
@@ -220,9 +249,14 @@ const handleImageUpload = (e) => {
           {error && <p className="error">{error}</p>}
         </div>
 
-        <div className="content">
-          <h1 className="title">Pending List</h1>
+        <div className="header">
+          <h2>Pending List</h2>
           {error && <p className="error">{error}</p>}
+          <div className="actions">
+          <button className="btn-add" onClick={handleAddFacility}>ADD</button>
+          </div>
+       </div>
+
           <table className="pending-list-table">
             <thead>
               <tr>
@@ -250,7 +284,7 @@ const handleImageUpload = (e) => {
               ))}
             </tbody>
           </table>
-        </div>
+      </main>
 
         {/* Facility Details Modal */}
         {isModalOpen && selectedFacility && (
@@ -344,7 +378,42 @@ const handleImageUpload = (e) => {
                     </div>
                 </div>
             )}
-        </div>
+
+
+        {isAddModalOpen && (
+          <div className="modal">
+            <div className="modal-content">
+              <button className="modal-close" onClick={closeAddModal}>X</button>
+              <h2>Add New Facility</h2>
+              <div className="modal-body">
+                <label>Facility Name</label>
+                <input
+                  type="text"
+                  value={newFacilityName}
+                  onChange={(e) => setNewFacilityName(e.target.value)}
+                />
+
+                <label>Facility Email</label>
+                <input
+                  type="text"
+                  value={newFacilityEmail}
+                  onChange={(e) => setNewFacilityEmail(e.target.value)}
+                />
+
+                <label>Facility Phone</label>
+                <input
+                  type="text"
+                  value={newFacilityPhone}
+                  onChange={(e) => setNewFacilityPhone(e.target.value)}
+                />
+              </div>
+              <div className="modal-footer">
+                <button className="btn-save" onClick={handleSaveNewFacility}>Save</button>
+                <button className="btn-cancel" onClick={closeAddModal}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        )} 
       </div>
     );
 }

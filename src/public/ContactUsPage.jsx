@@ -92,7 +92,7 @@ function ContactUsPage() {
                 </form>
 
                 <div className="contact-info">
-                    <h2>Contact Us</h2>
+                <   h1>Contact <span className="us-text">Us</span></h1>
                     <p>For questions, technical assistance, or collaboration opportunities via the contact information provided.</p>
                     <p><span role="img" aria-label="phone">📞</span> +123-456-7890</p>
                     <p><span role="img" aria-label="email">📧</span> UnifiedCare@gmail.com</p>

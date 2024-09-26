@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore"; // Import Firebase Firestore with deleteDoc
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"; // Import Firebase Storage
 import { db, storage } from '../../config/firebase'; // Firebase config import
-
+import '../../css/DeveloperCss/DevelopersApprovalPage.css';
 
 function FacilityApprovalPage() {
   const navigate = useNavigate();

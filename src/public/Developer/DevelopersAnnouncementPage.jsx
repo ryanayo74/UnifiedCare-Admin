@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, updateDoc, doc, setDoc} from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
+import loginImage from '../../assets/unifiedcarelogo.png';
 import '../../css/DeveloperCss/DevelopersAnnouncementPage.css'; // You can create this file for styling
 
 function DevelopersAnnouncementsPage() {
@@ -130,7 +131,8 @@ function DevelopersAnnouncementsPage() {
         <div className="announcements-container">            
             <aside className="sidebar">
                 <div className="logo-container">
-                    <img src="https://i.ytimg.com/vi/CYcrmsdZuyw/sddefault.jpg" alt="UnifiedCare Logo" className="logo" />
+                <img src={loginImage} alt="Logo" />
+                <h2>UnifiedCare</h2>
                 </div>
                 <nav className="menu">
                 <a href="#" className="menu-item" onClick={() => navigate('/DevelopersDashboardPage')}>Dashboard</a>

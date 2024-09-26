@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
+import loginImage from '../../assets/unifiedcarelogo.png';
 import '../../css/AdminParentsListPage.css';
 
 export default function DevelopersFacilityListPage() {
@@ -171,10 +172,11 @@ export default function DevelopersFacilityListPage() {
 
   return (
     <div className="therapist-list-container">
-      <aside className="sidebar">
-        <div className="logo-container">
-          <img src="https://i.ytimg.com/vi/CYcrmsdZuyw/sddefault.jpg" alt="UnifiedCare Logo" className="logo" />
-        </div>
+       <aside className="sidebar">
+          <div className="logo-container">
+          <  img src={loginImage} alt="Logo" />
+             <h2>UnifiedCare</h2>
+          </div>
         <nav className="menu">
           <a href="#" className="menu-item" onClick={() => navigate('/DevelopersDashboardPage')}>Dashboard</a>
           <a href="#" className="menu-item" onClick={() => navigate('/DevelopersFacilityListPage')}>Facilities</a>
@@ -202,10 +204,7 @@ export default function DevelopersFacilityListPage() {
         
         <div className="header">
           <h2>Facility List</h2>
-          <div className="actions">
-          <button className="btn-add" onClick={handleAddClick}>ADD</button>
-          </div>
-        </div>
+       </div>
         
         <table className="therapist-table">
           <thead>
@@ -231,7 +230,7 @@ export default function DevelopersFacilityListPage() {
         </table>
       </main>
 
-            {/* Therapist Details Modal */}
+  {/* Therapist Details Modal */}
   {isModalOpen && selectedFacility && (
   <div className="modal">
     <div className="modal-content parent-modal">

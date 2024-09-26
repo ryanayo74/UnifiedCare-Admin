@@ -6,6 +6,7 @@ import { db, storage } from '../../config/firebase';
 import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, PointElement, LineElement, Legend, Tooltip } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { Line } from 'react-chartjs-2';
+import loginImage from '../../assets/unifiedcarelogo.png';
 import '../../css/DeveloperCss/DevelopersDashboardPage.css';
 
 ChartJS.register(BarElement, CategoryScale, LinearScale, PointElement, LineElement, Legend, Tooltip);
@@ -31,8 +32,6 @@ function DevelopersDashboardPage() {
     const [years, setYears] = useState([]);
     const [viewMode, setViewMode] = useState('userData'); // Default to 'userData'
     const [averageSessionData, setAverageSessionData] = useState(new Array(12).fill(0));
-
-
 
     useEffect(() => {
         const email = localStorage.getItem('adminEmail');
@@ -300,11 +299,12 @@ function DevelopersDashboardPage() {
     };
 
     return (
-        <div className="dev-dashboard-container">
-            <aside className="sidebar">
-                <div className="logo-container">
-                    <img src="https://i.ytimg.com/vi/CYcrmsdZuyw/sddefault.jpg" alt="UnifiedCare Logo" className="logo" />
-                </div>
+    <div className="dev-dashboard-container">
+        <aside className="sidebar">
+        <div className="logo-container">
+          <img src={loginImage} alt="Logo" />
+          <h2>UnifiedCare</h2>
+        </div>
                 <nav className="menu">
                     <a href="#" className="menu-item" onClick={() => navigate('/DevelopersDashboardPage')}>Dashboard</a>
                     <a href="#" className="menu-item" onClick={() => navigate('/DevelopersFacilityListPage')}>Facilities</a>
@@ -314,7 +314,7 @@ function DevelopersDashboardPage() {
                 <div className="logout">
                     <a href="#" onClick={handleLogout}>Logout</a>
                 </div>
-            </aside>
+         </aside>
 
             <main className="dev-main-content">
             <div className="facility-info">
@@ -331,8 +331,9 @@ function DevelopersDashboardPage() {
             </div>
 
             <section className="dev-dashboard">
-                <h1>Users</h1>
+            <h1>Users</h1>
                 <div className="year-selector">
+           
                     <label htmlFor="year">Select Year:</label>
                     <select id="year" value={selectedYear} onChange={handleYearChange}>
                         {years.map(year => (
