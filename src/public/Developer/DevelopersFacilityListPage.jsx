@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
+import { collection, getDocs, updateDoc, doc, deleteDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
 import loginImage from '../../assets/unifiedcarelogo.png';
@@ -20,6 +20,10 @@ export default function DevelopersFacilityListPage() {
   const [newProfileImage, setNewProfileImage] = useState(null); 
   const [selectedFacility, setSelectedFacility] = useState(null); 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // For loading state
+  const [successMessage, setSuccessMessage] = useState(''); // For success message
+
 
   useEffect(() => {
     const email = localStorage.getItem('adminEmail');
@@ -79,52 +83,6 @@ export default function DevelopersFacilityListPage() {
     setIsModalOpen(false);
   };
 
-  const handleAddClick = () => {
-    setNewTherapist({
-      firstName: '',
-      lastName: '',
-      email: '',
-      phoneNumber: '',
-      therapyType: '',
-      specialization: '',
-      address: ''
-    });
-    setIsAddModalOpen(true);
-  };
-
-  const closeAddModal = () => {
-    setIsAddModalOpen(false);
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewTherapist((prev) => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleAddFacility = async () => {
-    try {
-      // Combine firstName and lastName to create a custom document ID
-      const docId = `${newTherapist.firstName}_${newTherapist.lastName}`;
-  
-      // Construct the therapist data with a fullName field
-      const therapistWithFullName = {
-        ...newTherapist,
-        fullName: `${newTherapist.firstName} ${newTherapist.lastName}` // Combine first and last name
-      };
-  
-      // Add the new therapist document with a custom ID
-      await setDoc(doc(db, "Users", "therapists", "newUserTherapist", docId), therapistWithFullName);
-      fetchTherapists(); // Refresh the therapist list after adding
-      closeAddModal();
-    } catch (error) {
-      console.error("Error adding therapist:", error);
-      setError("Failed to add therapist.");
-    }
-  };
-
   const handleProfileImageClick = () => {
     setIsProfileModalOpen(true);
   };
@@ -163,6 +121,48 @@ export default function DevelopersFacilityListPage() {
       }
     }
   };
+
+  const handleDeleteFacility = async () => {
+    if (selectedFacility && selectedFacility.id) {
+      setIsLoading(true); // Show loading modal
+      try {
+        const docRef = doc(db, "Users", "facility", "userFacility", selectedFacility.id);
+        await deleteDoc(docRef);
+        
+        // Refresh facility list after deletion
+        fetchFacility();
+        
+        // Close both modals
+        closeDeleteConfirm();
+        closeModal();
+        
+        // Set success message
+        setSuccessMessage('Facility deleted successfully!');
+      } catch (error) {
+        console.error("Error deleting facility:", error);
+        setError("Failed to delete facility.");
+      } finally {
+        setIsLoading(false); // Hide loading modal
+      }
+    }
+  };
+  
+  const handleDeleteClick = () => {
+    closeModal(); // Close the facility details modal
+    setIsDeleteConfirmOpen(true); // Open the confirmation modal
+};
+  
+  const closeDeleteConfirm = () => {
+    setIsDeleteConfirmOpen(false); // Close the confirmation modal
+  };
+
+
+  const closeSuccessModal = () => {
+    setSuccessMessage(''); // Reset success message
+  };
+  
+  
+  
 
   const handleLogout = () => {
     localStorage.removeItem('isAuthenticated');
@@ -271,11 +271,11 @@ export default function DevelopersFacilityListPage() {
         </div>
 
       </div>
+    
+    <div className="modal-footer">
+    <button className="btn-delete" onClick={handleDeleteClick}>DELETE</button>
+    </div>
 
-      <div className="modal-footer">
-        <button className="btn-update">UPDATE</button>
-        <button className="btn-delete">DELETE</button>
-      </div>
     </div>
   </div>
 )}
@@ -328,6 +328,39 @@ export default function DevelopersFacilityListPage() {
           </div>
         </div>
       )}
+
+        {isDeleteConfirmOpen && (
+          <div className="confirmation-modal">
+            <div className="modal-content">
+              <h3>Are you sure you want to delete this facility?</h3>
+              <div className="modal-footer">
+                <button className="btn-yes" onClick={handleDeleteFacility}>Yes</button>
+                <button className="btn-no" onClick={closeDeleteConfirm}>No</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+              {/* Loading Modal */}
+      {isLoading && (
+        <div className="modal">
+          <div className="modal-content">
+            <h3>Loading...</h3>
+            <p>Please wait while we delete the facility.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {successMessage && (
+        <div className="modal">
+          <div className="modal-content">
+            <h3>{successMessage}</h3>
+            <button onClick={closeSuccessModal} className="btn-update">Close</button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
