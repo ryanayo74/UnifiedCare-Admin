@@ -4,6 +4,7 @@ import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
 import { Bar } from 'react-chartjs-2';
+import { Line } from 'react-chartjs-2';
 import Swal from 'sweetalert2';
 import loginImage from '../../assets/unifiedcarelogo.png';
 import '../../css/AdminDashboardPage.css';
@@ -33,6 +34,9 @@ function AdminDashboardPage() {
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [years, setYears] = useState([]); // List of years for the dropdown
 
+    const [viewMode, setViewMode] = useState('userData'); // Default to 'userData'
+    const [averageSessionData, setAverageSessionData] = useState(new Array(12).fill(0));
+
 
     useEffect(() => {
         const email = localStorage.getItem('adminEmail');
@@ -42,6 +46,7 @@ function AdminDashboardPage() {
         }
         fetchYears(); // Fetch the years when users were created
     }, []);
+    
 
     useEffect(() => {
         if (years.length > 0) {
@@ -72,16 +77,6 @@ function AdminDashboardPage() {
         } catch (error) {
             console.error("Error fetching facility data:", error);
             setError("Failed to fetch facility data.");
-        }
-    };
-
-    const handleImageUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setSelectedImageFile(file);  // Store the selected image file in state
-            const imagePreviewURL = URL.createObjectURL(file);
-            setFacilityImage(imagePreviewURL);  // Optionally, show a preview of the selected image
-            setError(null);
         }
     };
 
@@ -133,13 +128,14 @@ function AdminDashboardPage() {
         }
     };
 
-    const handleFacilityImageClick = () => {
-        setIsFacilityModalOpen(true);
-    };
-
-    const closeFacilityModal = () => {
-        setIsFacilityModalOpen(false);
-        setSelectedImageFile(null);  // Clear selected file if modal is closed
+        const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setSelectedImageFile(file);  // Store the selected image file in state
+            const imagePreviewURL = URL.createObjectURL(file);
+            setFacilityImage(imagePreviewURL);  // Optionally, show a preview of the selected image
+            setError(null);
+        }
     };
 
     const fetchYears = async () => {
@@ -184,6 +180,11 @@ function AdminDashboardPage() {
             const therapistCount = therapistSnapshot.size;
             const parentCount = parentSnapshot.size;
 
+            // Fetch average session durations (replace with your actual logic)
+            const sessionSnapshot = await getDocs(collection(db, "Sessions"));
+            const sessionDataByMonth = new Array(12).fill(0);
+            const sessionCountByMonth = new Array(12).fill(0);
+
             setTherapistUsers(therapistCount);
             setParentUsers(parentCount);
             setTotalUsers(therapistCount + parentCount);
@@ -216,8 +217,25 @@ function AdminDashboardPage() {
                 }
             });
 
+                sessionSnapshot.forEach(doc => {
+                const sessionData = doc.data();
+                if (sessionData.sessionDuration && sessionData.createdAt) {
+                    const sessionDate = sessionData.createdAt.toDate();
+                    if (sessionDate.getFullYear() === year) {
+                        const month = sessionDate.getMonth();
+                        sessionDataByMonth[month] += sessionData.sessionDuration; // Assuming sessionDuration is in seconds
+                        sessionCountByMonth[month]++;
+                    }
+                }
+            });
+
+            const avgSessionDurationByMonth = sessionDataByMonth.map((totalDuration, index) =>
+            sessionCountByMonth[index] > 0 ? totalDuration / sessionCountByMonth[index] : 0
+            );
+
             setParentData(parentCountByMonth);
             setTherapistData(therapistCountByMonth);
+            setAverageSessionData(avgSessionDurationByMonth);
         } catch (error) {
             console.error("Error fetching user data:", error);
             setError("Failed to fetch user data.");
@@ -258,6 +276,54 @@ function AdminDashboardPage() {
             }
         }
     };
+
+           // Define data and options for the line chart
+    const avgSessionData = {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        datasets: [
+            {
+                label: 'Avg Session Duration (Users)',
+                data: averageSessionData,
+                backgroundColor: 'rgba(75,192,192,0.4)',
+                borderColor: 'rgba(75,192,192,1)',
+                fill: false,
+            }
+        ]
+    };
+
+    const avgSessionOptions = {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    };
+
+    {viewMode === 'avgSession' ? (
+        <div className="chart-container">
+            <Line data={avgSessionData} options={avgSessionOptions} />
+        </div>
+    ) : (
+        // Existing Bar chart
+        <div className="chart-container">
+            <Bar data={data} options={options} />
+        </div>
+    )}
+
+        // Toggle between userData and avgSession
+    const handleModeChange = (event) => {
+            setViewMode(event.target.value);
+    };
+
+    const handleFacilityImageClick = () => {
+        setIsFacilityModalOpen(true);
+    };
+
+    const closeFacilityModal = () => {
+        setIsFacilityModalOpen(false);
+        setSelectedImageFile(null);  // Clear selected file if modal is closed
+    };
     
     const handleLogout = () => {
         localStorage.removeItem('isAuthenticated');
@@ -284,7 +350,6 @@ function AdminDashboardPage() {
                     <a href="#" onClick={handleLogout}>Logout</a>
                 </div>
             </aside>
-
             <main className="main-content">
                 <div className="facility-info" onClick={handleFacilityImageClick} style={{ cursor: 'pointer' }}>
                     <img
@@ -297,25 +362,37 @@ function AdminDashboardPage() {
                     {error && <p className="error">{error}</p>}
                 </div>
 
-                <section className="dashboard">         
-                    <div className="year-selector">
-                        <label htmlFor="year">Select Year:</label>
-                        <select id="year" value={selectedYear} onChange={handleYearChange}>
-                            {years.map(year => (
-                                <option key={year} value={year}>{year}</option>
-                            ))}
-                        </select>
+                <section className="dashboard"> 
+                     <h2 className='userText'>Users</h2>
+                <div className="year-selector">
+                    <label htmlFor="year">Select Year:</label>
+                    <select id="year" value={selectedYear} onChange={handleYearChange}>
+                        {years.map(year => (
+                            <option key={year} value={year}>{year}</option>
+                        ))}
+                    </select>
+                </div>
+
+                {/* Conditionally render either Bar or Line chart based on viewMode */}
+                {viewMode === 'avgSession' ? (
+                     <div className="chart-container">
+                        <Line data={avgSessionData} options={avgSessionOptions} />
                     </div>
+                ) : (
                     <div className="chart-container">
-                        <Bar data={data} options={options} />
+                    <Bar data={data} options={options} />
                     </div>
-                    <div className="user-stats">
-                        <p>Total users: <span>{totalUsers}</span></p>
-                        <p>Therapist users: <span>{therapistUsers}</span></p>
-                        <p>Parent users: <span>{parentUsers}</span></p>
-                        <p>Average Session Duration: <span>3m 12s</span></p>
-                    </div>
-                </section>
+                )}
+
+                <div className="user-stats">
+                    <p>Total users: <span>{totalUsers}</span></p>
+                    <p>Therapist users: <span>{therapistUsers}</span></p>
+                    <p>Parent users: <span>{parentUsers}</span></p>
+                    <p>Average Session Duration: <span>3m 12s</span></p>
+                    <button onClick={() => setViewMode('userData')} className="user-data-btn">User Data</button>    
+                    <button onClick={() => setViewMode('avgSession')} className="avg-session-btn">Avg Session</button>
+                </div>
+            </section>
             </main>
 
             {/* Modal for facility image and details */}

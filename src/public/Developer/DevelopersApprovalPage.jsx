@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; 
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc} from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
+import { auth } from '../../config/firebase';
 import loginImage from '../../assets/unifiedcarelogo.png';
 import Swal from 'sweetalert2';
 import '../../css/DeveloperCss/DevelopersApprovalPage.css';
+import { createUserWithEmailAndPassword,sendEmailVerification } from 'firebase/auth';
 
 function DevelopersApprovalPage() {
   const navigate = useNavigate();
@@ -146,13 +148,57 @@ const handleImageUpload = (e) => {
     setNewFacilityPhone('');
   };
 
-  const handleSaveNewFacility = () => {
-    // Logic to save new facility (You can implement the save functionality here)
-    console.log("Saving new facility:", newFacilityName, newFacilityEmail, newFacilityPhone);
-
-    // Close the modal after saving
-    closeAddModal();
-  };
+  const handleSaveNewFacility = async () => {
+    if (!newFacilityName || !newFacilityEmail || !newFacilityPhone) {
+      // Show an error message if any required field is missing
+      Swal.fire({
+        title: 'Error!',
+        text: 'Please fill in all fields.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
+      return;
+    }
+  
+    try {
+      // Create a reference to the pending collection with a unique ID
+      const facilityRef = doc(db, "Users", "facility", "pending", newFacilityName.replace(/\s+/g, '_')); // Replace spaces in the name
+  
+      // Save the facility details in the 'pending' collection
+      await setDoc(facilityRef, {
+        name: newFacilityName,
+        email: newFacilityEmail,
+        phoneNumber: newFacilityPhone,
+        status: 'pending' // Optional: to track status
+      });
+  
+      // Success message after saving the facility
+      Swal.fire({
+        title: 'Success!',
+        text: 'Facility added successfully.',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      });
+  
+      // Reset the input fields after saving
+      setNewFacilityName('');
+      setNewFacilityEmail('');
+      setNewFacilityPhone('');
+  
+      // Close the modal after saving
+      closeAddModal();
+    } catch (error) {
+      console.error("Error adding facility:", error);
+  
+      // Show error message if something goes wrong
+      Swal.fire({
+        title: 'Error!',
+        text: 'Failed to add the facility. Please try again.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
+    }
+  };  
 
   const handleApprove = async (facility) => {
     Swal.fire({
@@ -165,39 +211,54 @@ const handleImageUpload = (e) => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          // Create a sanitized facility name to use as the document ID
           const sanitizedFacilityName = facility.name.replace(/[^a-zA-Z0-9-_]/g, '');
+  
+          // Create a new user with email and password
+          const { user } = await createUserWithEmailAndPassword(auth, facility.email, 'admin123');
+          
+          // Send verification email
+          await sendEmailVerification(user);
   
           // Reference to the new facility in the userFacility collection
           const userFacilityRef = doc(db, "Users", "facility", "newUserFacility", sanitizedFacilityName);
   
-          // Save facility details to the userFacility collection
+          // Save facility details to Firestore
           await setDoc(userFacilityRef, {
             name: facility.name,
             email: facility.email,
             phoneNumber: facility.phoneNumber,
-            password: 'admin123'
+            password: 'admin123',
+            emailVerified: false, // Initially set as false
           });
   
           // Remove the facility from the pending collection
           const pendingRef = doc(db, "Users", "facility", "pending", facility.id);
           await deleteDoc(pendingRef);
   
-          // Update the state to remove the approved facility from the pendingUsers list
+          // Update the pendingUsers state
           setPendingUsers(pendingUsers.filter(user => user.id !== facility.id));
   
           Swal.fire({
             title: 'Approved!',
-            text: `${facility.name} has been approved successfully.`,
+            text: `${facility.name} has been approved. A verification email has been sent to ${facility.email}.`,
             icon: 'success',
           });
+  
         } catch (error) {
+          if (error.code === 'auth/email-already-in-use') {
+            Swal.fire({
+              title: 'Error!',
+              text: 'The email is already in use. Please check the facility details and try again.',
+              icon: 'error',
+            });
+          } else {
+            Swal.fire({
+              title: 'Error!',
+              text: 'Failed to approve the facility. Please try again.',
+              icon: 'error',
+            });
+          }
           console.error("Error approving facility:", error);
-          Swal.fire({
-            title: 'Error!',
-            text: 'Failed to approve the facility. Please try again.',
-            icon: 'error',
-          });
         }
       }
     });
@@ -280,16 +341,16 @@ const handleImageUpload = (e) => {
           <img src={loginImage} alt="Logo" />
           <h2>UnifiedCare</h2>
         </div>
-        <nav className="menu">
-          <a href="#" className="menu-item" onClick={() => navigate('/DevelopersDashboardPage')}>Dashboard</a>
-          <a href="#" className="menu-item" onClick={() => navigate('/DevelopersFacilityListPage')}>Facilities</a>
-          <a href="#" className="menu-item" onClick={() => navigate('/DevelopersApprovalPage')}>Approval</a>
-          <a href="#" className="menu-item" onClick={() => navigate('/DevelopersAnnouncementPage')}>Announcements</a> 
-        </nav>
-        <div className="logout">
-          <a href="#" onClick={handleLogout}>Logout</a>
-        </div>
-      </aside>
+                <nav className="menu">
+                    <a href="#" className="menu-item" onClick={() => navigate('/DevelopersDashboardPage')}>Dashboard</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/DevelopersFacilityListPage')}>Facilities</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/DevelopersApprovalPage')}>Approval</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/DevelopersAnnouncementPage')}>Announcements</a> 
+                </nav>
+                <div className="logout">
+                    <a href="#" onClick={handleLogout}>Logout</a>
+                </div>
+         </aside>
 
       <main className="main-content">
         <div className="facility-info">
@@ -464,7 +525,7 @@ const handleImageUpload = (e) => {
                 />
               </div>
               <div className="modal-footer">
-                <button className="btn-save" onClick={handleSaveNewFacility}>Save</button>
+                <button className="btn-update" onClick={handleSaveNewFacility}>Add</button>
                 <button className="btn-cancel" onClick={closeAddModal}>Cancel</button>
               </div>
             </div>

@@ -6,6 +6,7 @@ import LandingPage from './public/LandingPage.jsx';
 import AdminLoginPage from './public/AdminLoginPage.jsx';
 import ContactUsPage from './public/ContactUsPage.jsx';
 import ChangePasswordPage from './public/ChangePasswordPage.jsx';
+import ForgotPasswordPage from './public/ForgotPasswordPage.jsx';
 
 // Admin Developers Pages
 import DevelopersFacilityListPage from './public/Developer/DevelopersFacilityListPage.jsx';
@@ -36,7 +37,10 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/AdminLoginPage" element={<AdminLoginPage />} />
         <Route path="/ChangePasswordPage" element={<ChangePasswordPage />} />
+        <Route path="/ForgotPasswordPage" element={<ForgotPasswordPage />} />
         <Route path="/ContactUsPage" element={<ContactUsPage />} />
+
+        
         
         {/* Protected Routes */}
 

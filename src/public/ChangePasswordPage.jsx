@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { doc, updateDoc, query, collection, where, getDocs, setDoc, deleteDoc } from "firebase/firestore";
-import { db } from '../config/firebase';
+import { db, auth } from '../config/firebase'; // Import auth from Firebase
+import { updatePassword } from 'firebase/auth'; // Import updatePassword from Firebase Auth
 import '../css/ChangePasswordPage.css';
+import loginImage from '../assets/LoginBackgroundImage.png';
+import logo from '../assets/loginLogo.png';
 import { useNavigate } from 'react-router-dom';
 
 function ChangePasswordPage() {
@@ -16,12 +19,10 @@ function ChangePasswordPage() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Retrieve the email from localStorage
         const email = localStorage.getItem('adminEmail');
         if (email) {
             setUserEmail(email);
         } else {
-            // Redirect to login if no email is found
             navigate('/login');
         }
     }, [navigate]);
@@ -38,7 +39,7 @@ function ChangePasswordPage() {
 
     const updatePasswordAndCopyDocument = async (email, newPassword) => {
         try {
-            // Query the document(s) where the email matches in newUserFacility collection
+            // Query Firestore for the user's document
             const userQuery = query(
                 collection(db, "Users", "facility", "newUserFacility"),
                 where("email", "==", email)
@@ -50,27 +51,26 @@ function ChangePasswordPage() {
                 return;
             }
 
-            // Iterate over all matching documents (assuming email is unique, there should be only one)
+            // Update Firestore document(s)
             querySnapshot.forEach(async (docSnapshot) => {
                 const userData = docSnapshot.data();
 
-                // Update the password field
+                // Update password field in Firestore
                 await updateDoc(docSnapshot.ref, { password: newPassword });
 
-                // Prepare data for the new collection
+                // Copy data to userFacility collection
                 const newUserData = {
                     ...userData,
-                    password: newPassword, // Ensure password is updated
-                    timestamp: new Date() // Optionally add a timestamp
+                    password: newPassword,
+                    timestamp: new Date()
                 };
 
-                // Set the document in userFacility collection with the same document ID
                 await setDoc(
                     doc(db, "Users", "facility", "userFacility", docSnapshot.id),
                     newUserData
                 );
 
-                // Delete the document from the newUserFacility collection
+                // Delete the document from newUserFacility collection
                 await deleteDoc(docSnapshot.ref);
 
                 setSuccessMessage("Password updated and user data moved successfully.");
@@ -88,7 +88,6 @@ function ChangePasswordPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Basic validation
         if (!formData.password || !formData.confirmPassword) {
             setErrorMessage("Please fill in all password fields.");
             return;
@@ -104,28 +103,46 @@ function ChangePasswordPage() {
             return;
         }
 
-        // Update password and process document
-        await updatePasswordAndCopyDocument(userEmail, formData.password);
+        try {
+            // Update Firebase Auth password
+            const user = auth.currentUser;
+            if (user) {
+                await updatePassword(user, formData.password);
+                console.log("Password updated in Firebase Auth.");
+            } else {
+                setErrorMessage("User is not authenticated.");
+                return;
+            }
 
-        // Clear form fields after successful operation
-        setFormData({
-            password: '',
-            confirmPassword: ''
-        });
+            // Update Firestore password and process document
+            await updatePasswordAndCopyDocument(userEmail, formData.password);
+
+            // Clear form fields after successful operation
+            setFormData({
+                password: '',
+                confirmPassword: ''
+            });
+
+        } catch (error) {
+            console.error("Error updating password: ", error);
+            setErrorMessage("An error occurred while updating the password. Please try again.");
+        }
     };
 
     return (
-        <div className="change-password-container">
-            <div className="form-container">
-                <img src="/path-to-logo.png" alt="UnifiedCare Logo" className="logo" />
+        <div className="login-container">
+            <div className="login-form">
+                <div className="logo">
+                    <img src={logo} alt="Logo" />
+                </div>
                 <h2>Welcome, Admin!</h2>
                 <p>Please enter your new password details</p>
                 <form className="change-password-form" onSubmit={handleSubmit}>
-                    <div className="form-group">
+                    <div className="input-container">
                         <label>Email</label>
                         <input type="email" value={userEmail} disabled />
                     </div>
-                    <div className="form-group">
+                    <div className="input-container">
                         <label>Create New Password</label>
                         <div className="password-input">
                             <input
@@ -135,16 +152,16 @@ function ChangePasswordPage() {
                                 onChange={handleChange}
                                 required
                             />
-                            <button
+                            <span
                                 type="button"
                                 onClick={toggleShowPassword}
-                                className="toggle-password"
+                                className="password-eye"
                             >
                                 {showPassword ? '🙈' : '👁️'}
-                            </button>
+                            </span>
                         </div>
                     </div>
-                    <div className="form-group">
+                    <div className="input-container">
                         <label>Confirm New Password</label>
                         <div className="password-input">
                             <input
@@ -154,13 +171,13 @@ function ChangePasswordPage() {
                                 onChange={handleChange}
                                 required
                             />
-                            <button
+                            <span 
                                 type="button"
                                 onClick={toggleShowPassword}
-                                className="toggle-password"
+                                className="password-eye"
                             >
                                 {showPassword ? '🙈' : '👁️'}
-                            </button>
+                            </span>
                         </div>
                     </div>
 
@@ -172,8 +189,8 @@ function ChangePasswordPage() {
                     </button>
                 </form>
             </div>
-            <div className="image-container">
-                <img src="/path-to-image.jpg" alt="Children" className="background-image" />
+            <div className="login-image">
+                <img src={loginImage} alt="Login Background" />
             </div>
         </div>
     );

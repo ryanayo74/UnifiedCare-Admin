@@ -69,8 +69,17 @@
     border-radius: 4px;
 }
 
-.avg-session-btn:hover {
+.avg-session-btn:hover, .user-data-btn:hover {
     background-color: #005304;
+}
+
+.year-selector{
+    position: fixed;
+    border-color: #e73cc2;
+    margin-top: 400px;
+    color: #000;
+    margin-left: -150px;
+    
 }
 
 .modal {

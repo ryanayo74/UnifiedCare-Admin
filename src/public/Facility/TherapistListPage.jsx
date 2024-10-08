@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, updateDoc, doc, setDoc} from "firebase/firestore";
+import { collection, getDocs, updateDoc, doc, setDoc, deleteDoc} from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
+import loginImage from '../../assets/unifiedcarelogo.png';
 import Swal from 'sweetalert2';
 import '../../css/TherapistListPage.css';
 
@@ -36,29 +37,40 @@ export default function TherapistListPage() {
 
   const fetchFacilityData = async (email) => {
     try {
-        const querySnapshot = await getDocs(collection(db, "Users", "facility", "userFacility"));
-        let found = false;
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            if (data.email === email) {
-                setFacilityName(data.name || 'Sample Facility');
-                setFacilityImage(data.image || '/path-to-default-facility.jpg');
-                setFacilityDescription(data.description || 'Set your facility description');
-                setFacilityAddress(data.address || 'Set your facility address.');
-                setCurrentDocId(doc.id);
-                found = true;
-            }
-        });
-
-        if (!found) {
-            console.error("No document found with this email.");
-            setError("No document found with this email.");
+      const querySnapshot = await getDocs(collection(db, "Users", "facility", "userFacility"));
+      let found = false;
+  
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.email === email) {
+          setFacilityName(data.name || 'Sample Facility');
+          setFacilityImage(data.image || '/path-to-default-facility.jpg');
+          setFacilityDescription(data.description || 'Set your facility description');
+          setFacilityAddress(data.address || 'Set your facility address.');
+          setCurrentDocId(doc.id);
+          found = true;
         }
+      });
+  
+      if (!found) {
+        Swal.fire({
+          icon: 'error',
+          title: 'No Facility Found',
+          text: 'No facility data found for this email.',
+          confirmButtonText: 'Try Again'
+        });
+      }
     } catch (error) {
-        console.error("Error fetching facility data:", error);
-        setError("Failed to fetch facility data.");
+      Swal.fire({
+        icon: 'error',
+        title: 'Fetch Error',
+        text: 'There was an error fetching facility data. Please try again.',
+        confirmButtonText: 'Retry'
+      });
+      console.error("Error fetching facility data:", error);
     }
-};
+  };
+  
 
 const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -168,24 +180,70 @@ const handleUpdateClick = async () => {
 
   const handleAddTherapist = async () => {
     try {
-      // Combine firstName and lastName to create a custom document ID
       const docId = `${newTherapist.firstName}_${newTherapist.lastName}`;
-  
-      // Construct the therapist data with a fullName field
       const therapistWithFullName = {
         ...newTherapist,
-        fullName: `${newTherapist.firstName} ${newTherapist.lastName}` // Combine first and last name
+        fullName: `${newTherapist.firstName} ${newTherapist.lastName}`,
       };
   
-      // Add the new therapist document with a custom ID
-      await setDoc(doc(db, "Users", "therapists", "newUserTherapist", docId), therapistWithFullName);
-      fetchTherapists(); // Refresh the therapist list after adding
+      await setDoc(doc(db, "Users", "facility", "userFacility", currentDocId, "pending", docId), therapistWithFullName);
+      
+      fetchTherapists(); // Refresh therapist list after adding
       closeAddModal();
+  
+      // Success SweetAlert
+      Swal.fire({
+        icon: 'success',
+        title: 'Therapist Added!',
+        text: `${therapistWithFullName.fullName} has been successfully added.`,
+        confirmButtonText: 'Okay'
+      });
     } catch (error) {
       console.error("Error adding therapist:", error);
-      setError("Failed to add therapist.");
+      
+      // Error SweetAlert
+      Swal.fire({
+        icon: 'error',
+        title: 'Add Failed',
+        text: 'There was an error adding the therapist. Please try again.',
+        confirmButtonText: 'Try Again'
+      });
     }
   };
+  
+
+  const handleDeleteTherapist = async (therapistId) => {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "This action will permanently delete the therapist.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'No, keep it'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          // Reference to the therapist document in Firestore
+          const therapistDocRef = doc(db, "Users", "therapists", "newUserTherapist", therapistId);
+  
+          // Delete the therapist document
+          await deleteDoc(therapistDocRef);
+  
+          // Update the therapists state to remove the deleted therapist
+          setTherapists(therapists.filter(therapist => therapist.id !== therapistId));
+  
+          // Show success message
+          Swal.fire('Deleted!', 'The therapist has been deleted.', 'success');
+          setIsModalOpen(false); // Close the modal after deletion
+        } catch (error) {
+          console.error("Error deleting therapist:", error);
+          Swal.fire('Error', 'Failed to delete the therapist. Please try again.', 'error');
+        }
+      }
+    });
+  };
+  
+  
   
   const handleFacilityImageClick = () => {
     setIsFacilityModalOpen(true); 
@@ -203,23 +261,23 @@ const handleUpdateClick = async () => {
 
   return (
     <div className="therapist-list-container">
-      <aside className="sidebar">
-        <div className="logo-container">
-          <img src="https://i.ytimg.com/vi/CYcrmsdZuyw/sddefault.jpg" alt="UnifiedCare Logo" className="logo" />
-        </div>
-        <nav className="menu">
-          <a href="#" className="menu-item" onClick={() => navigate('/AdminDashboardPage')}>Dashboard</a>
-          <a href="#" className="menu-item" onClick={() => navigate('/TherapistListPage')}>Therapist</a>
-          <a href="#" className="menu-item" onClick={() => navigate('/AdminParentsListPage')}>Parents</a>
-          <a href="#" className="menu-item" onClick={() => navigate('/AdminFacilityAnnouncementPage')}>Announcements</a>
-          <a href="#" className="menu-item" onClick={() => navigate('/FacilityApprovalPage')}>Approval</a>
-          <a href="#" className="menu-item" onClick={() => navigate('/FacilityMessagePage')}>Messages</a>
-        </nav>
-        <div className="logout">
-          <a href="#" onClick={handleLogout}>Logout</a>
-        </div>
-      </aside>
-
+            <aside className="sidebar">
+                <div className="logo-container">
+                <img src={loginImage} alt="Logo" />
+                <h2>UnifiedCare</h2>
+                </div>
+                <nav className="menu">
+                    <a href="#" className="menu-item" onClick={() => navigate('/AdminDashboardPage')}>Dashboard</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/TherapistListPage')}>Therapist</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/AdminParentsListPage')}>Parents</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/AdminFacilityAnnouncementPage')}>Announcements</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/FacilityApprovalPage')}>Approval</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/FacilityMessagePage')}>Messages</a>
+                </nav>
+                <div className="logout">
+                    <a href="#" onClick={handleLogout}>Logout</a>
+                </div>
+            </aside>
       <main className="main-content">
         <div className="facility-info" onClick={handleFacilityImageClick} style={{ cursor: 'pointer' }}>
           <img
@@ -236,7 +294,6 @@ const handleUpdateClick = async () => {
           <h2>Therapist List</h2>
           <div className="actions">
           <button className="btn-add" onClick={handleAddClick}>ADD</button>
-          <button className="btn-edit">EDIT</button>
           </div>
         </div>
         
@@ -309,10 +366,9 @@ const handleUpdateClick = async () => {
           <p>{selectedTherapist.specialization || "N/A"}</p>
         </div>
       </div>
-
-      <div className="modal-footer">
+            <div className="modal-footer">
         <button className="btn-update">UPDATE</button>
-        <button className="btn-delete">DELETE</button>
+        <button className="btn-delete" onClick={() => handleDeleteTherapist(selectedTherapist.id)}>DELETE</button>
       </div>
     </div>
   </div>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
+import loginImage from '../../assets/unifiedcarelogo.png';
 import Swal from 'sweetalert2';
 import '../../css/AdminParentsListPage.css';
 
@@ -165,23 +166,23 @@ const closeFacilityModal = () => {
 
   return (
     <div className="therapist-list-container">
-      <aside className="sidebar">
-        <div className="logo-container">
-          <img src="https://i.ytimg.com/vi/CYcrmsdZuyw/sddefault.jpg" alt="UnifiedCare Logo" className="logo" />
-        </div>
-        <nav className="menu">
-          <a href="#" className="menu-item" onClick={() => navigate('/AdminDashboardPage')}>Dashboard</a>
-          <a href="#" className="menu-item" onClick={() => navigate('/TherapistListPage')}>Therapist</a>
-          <a href="#" className="menu-item" onClick={() => navigate('/AdminParentsListPage')}>Parents</a>
-          <a href="#" className="menu-item" onClick={() => navigate('/AdminFacilityAnnouncementPage')}>Announcements</a>
-          <a href="#" className="menu-item" onClick={() => navigate('/FacilityApprovalPage')}>Approval</a>
-          <a href="#" className="menu-item" onClick={() => navigate('/FacilityMessagePage')}>Messages</a>
-        </nav>
-        <div className="logout">
-          <a href="#" onClick={handleLogout}>Logout</a>
-        </div>
-      </aside>
-
+            <aside className="sidebar">
+                <div className="logo-container">
+                <img src={loginImage} alt="Logo" />
+                <h2>UnifiedCare</h2>
+                </div>
+                <nav className="menu">
+                    <a href="#" className="menu-item" onClick={() => navigate('/AdminDashboardPage')}>Dashboard</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/TherapistListPage')}>Therapist</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/AdminParentsListPage')}>Parents</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/AdminFacilityAnnouncementPage')}>Announcements</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/FacilityApprovalPage')}>Approval</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/FacilityMessagePage')}>Messages</a>
+                </nav>
+                <div className="logout">
+                    <a href="#" onClick={handleLogout}>Logout</a>
+                </div>
+            </aside>
       <main className="main-content">
         <div className="facility-info" onClick={handleFacilityImageClick} style={{ cursor: 'pointer' }}>
           <img
@@ -199,7 +200,6 @@ const closeFacilityModal = () => {
           <h2>Parents List</h2>
           <div className="actions">
             <button className="btn-add">ADD</button>
-            <button className="btn-edit">EDIT</button>
           </div>
         </div>
         <table className="therapist-table">

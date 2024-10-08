@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, updateDoc, doc, deleteDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db, storage } from '../../config/firebase';
 import loginImage from '../../assets/unifiedcarelogo.png';
 import Swal from 'sweetalert2';
@@ -143,35 +144,64 @@ export default function DevelopersFacilityListPage() {
     }
 };
 
-  const handleDeleteFacility = async () => {
-    if (selectedFacility && selectedFacility.id) {
-      setIsLoading(true); // Show loading modal
-      try {
-        const docRef = doc(db, "Users", "facility", "userFacility", selectedFacility.id);
-        await deleteDoc(docRef);
-        
-        // Refresh facility list after deletion
-        fetchFacility();
-        
-        // Close both modals
-        closeDeleteConfirm();
-        closeModal();
-        
-        // Show success message using SweetAlert
-        Swal("Deleted!", "Facility deleted successfully!", "success");
-      } catch (error) {
-        console.error("Error deleting facility:", error);
-        setError("Failed to delete facility.");
-      } finally {
-        setIsLoading(false); // Hide loading modal
-      }
+const handleDeleteClick = () => {
+  closeModal(); // Close the facility details modal
+
+  // Show confirmation dialog using SweetAlert
+  Swal.fire({
+    title: 'Are you sure?',
+    text: "You won't be able to revert this!",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Yes, delete it!'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      handleDeleteFacility(); // Proceed with deletion if confirmed
     }
-  };
-  
-  const handleDeleteClick = () => {
-    closeModal(); // Close the facility details modal
-    setIsDeleteConfirmOpen(true); // Open the confirmation modal
+  });
 };
+
+const handleDeleteFacility = async () => {
+  if (selectedFacility && selectedFacility.id && selectedFacility.email) {
+    setIsLoading(true); // Show loading modal
+    try {
+      // Step 1: Delete facility document from Firestore
+      const docRef = doc(db, "Users", "facility", "userFacility", selectedFacility.id);
+      await deleteDoc(docRef);
+      
+      // Step 2: Call the Cloud Function to delete the user's Firebase Authentication account
+      const functions = getFunctions();
+      const deleteAuthUser = httpsCallable(functions, 'deleteFacilityAuthUser');
+      await deleteAuthUser({ email: selectedFacility.email });
+
+      // Refresh facility list after deletion
+      fetchFacility();
+      
+      // Show success message using SweetAlert
+      Swal.fire(
+        'Deleted!',
+        'Facility and associated authentication account deleted successfully!',
+        'success'
+      );
+    } catch (error) {
+      console.error("Error deleting facility:", error);
+      setError("Failed to delete facility.");
+      
+      // Show error message using SweetAlert if deletion fails
+      Swal.fire({
+        title: 'Error!',
+        text: 'Failed to delete facility or its authentication account.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+      });
+    } finally {
+      setIsLoading(false); // Hide loading modal
+    }
+  }
+};
+
   
   const closeDeleteConfirm = () => {
     setIsDeleteConfirmOpen(false); // Close the confirmation modal

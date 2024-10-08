@@ -17,13 +17,12 @@ function DevelopersDashboardPage() {
     const navigate = useNavigate();
     const [adminEmail, setAdminEmail] = useState('');
     const [developerName, setDeveloperName] = useState('Developer');
-    const [profileDescription, setProfileDescription] = useState('Senior Developer at Company XYZ');
+    const [profileDescription, setProfileDescription] = useState('Set Developer Description');
     const [profileImage, setProfileImage] = useState('/path-to-default-profile.jpg');
     const [error, setError] = useState(null);
     const [currentDocId, setCurrentDocId] = useState(null);
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [newProfileImage, setNewProfileImage] = useState(null); // For storing the new image file
-
     const [totalUsers, setTotalUsers] = useState(0);
     const [therapistUsers, setTherapistUsers] = useState(0);
     const [parentUsers, setParentUsers] = useState(0);
@@ -349,9 +348,8 @@ function DevelopersDashboardPage() {
             </div>
 
             <section className="dev-dashboard">
-            <h1>Users</h1>
+            <h1 className='userText'>Users</h1>
                 <div className="year-selector">
-           
                     <label htmlFor="year">Select Year:</label>
                     <select id="year" value={selectedYear} onChange={handleYearChange}>
                         {years.map(year => (
@@ -362,12 +360,12 @@ function DevelopersDashboardPage() {
 
                 {/* Conditionally render either Bar or Line chart based on viewMode */}
                 {viewMode === 'avgSession' ? (
-                    <div className="chart-container">
+                     <div className="chart-container">
                         <Line data={avgSessionData} options={avgSessionOptions} />
                     </div>
                 ) : (
                     <div className="chart-container">
-                        <Bar data={data} options={options} />
+                    <Bar data={data} options={options} />
                     </div>
                 )}
 
@@ -376,8 +374,8 @@ function DevelopersDashboardPage() {
                     <p>Therapist users: <span>{therapistUsers}</span></p>
                     <p>Parent users: <span>{parentUsers}</span></p>
                     <p>Average Session Duration: <span>3m 12s</span></p>
+                    <button onClick={() => setViewMode('userData')} className="user-data-btn">User Data</button>    
                     <button onClick={() => setViewMode('avgSession')} className="avg-session-btn">Avg Session</button>
-                    <button onClick={() => setViewMode('userData')} className="user-data-btn">User Data</button>
                 </div>
             </section>
             </main>

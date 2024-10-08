@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, addDoc } from "firebase/firestore";
 import { db } from '../config/firebase'; // Make sure to adjust the path
+import Swal from 'sweetalert2'; // Import SweetAlert2
 import '../css/ContactUsPage.css'; // Import the corresponding CSS file
 
 function ContactUsPage() {
@@ -49,11 +50,24 @@ function ContactUsPage() {
                 message: ''
             });
 
-            alert('Your message has been submitted successfully!');
+            // Display a SweetAlert success message
+            Swal.fire({
+                icon: 'success',
+                title: 'Message Sent!',
+                text: 'Your message has been submitted successfully!',
+                confirmButtonText: 'OK'
+            });
 
         } catch (error) {
             console.error("Error adding document: ", error);
-            alert('There was an error submitting your message. Please try again.');
+
+            // Display a SweetAlert error message
+            Swal.fire({
+                icon: 'error',
+                title: 'Submission Failed',
+                text: 'There was an error submitting your message. Please try again.',
+                confirmButtonText: 'OK'
+            });
         }
     };
 
@@ -92,7 +106,7 @@ function ContactUsPage() {
                 </form>
 
                 <div className="contact-info">
-                <   h1>Contact <span className="us-text">Us</span></h1>
+                    <h1>Contact <span className="us-text">Us</span></h1>
                     <p>For questions, technical assistance, or collaboration opportunities via the contact information provided.</p>
                     <p><span role="img" aria-label="phone">📞</span> +123-456-7890</p>
                     <p><span role="img" aria-label="email">📧</span> UnifiedCare@gmail.com</p>

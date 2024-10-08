@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, updateDoc, doc, setDoc} from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
+import loginImage from '../../assets/unifiedcarelogo.png';
 import Swal from 'sweetalert2';
 import '../../css/AdminFacilityAnnouncementPage.css'; // You can create this file for styling
 
@@ -149,21 +150,21 @@ function AnnouncementsPage() {
         <div className="announcements-container">            
             <aside className="sidebar">
                 <div className="logo-container">
-                    <img src="https://i.ytimg.com/vi/CYcrmsdZuyw/sddefault.jpg" alt="UnifiedCare Logo" className="logo" />
+                <img src={loginImage} alt="Logo" />
+                <h2>UnifiedCare</h2>
                 </div>
                 <nav className="menu">
-                <a href="#" className="menu-item" onClick={() => navigate('/AdminDashboardPage')}>Dashboard</a>
-                <a href="#" className="menu-item" onClick={() => navigate('/TherapistListPage')}>Therapist</a>
-                <a href="#" className="menu-item" onClick={() => navigate('/AdminParentsListPage')}>Parents</a>
-                <a href="#" className="menu-item" onClick={() => navigate('/AdminFacilityAnnouncementPage')}>Announcements</a>
-                <a href="#" className="menu-item" onClick={() => navigate('/FacilityApprovalPage')}>Approval</a>
-                <a href="#" className="menu-item" onClick={() => navigate('/FacilityMessagePage')}>Messages</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/AdminDashboardPage')}>Dashboard</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/TherapistListPage')}>Therapist</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/AdminParentsListPage')}>Parents</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/AdminFacilityAnnouncementPage')}>Announcements</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/FacilityApprovalPage')}>Approval</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/FacilityMessagePage')}>Messages</a>
                 </nav>
                 <div className="logout">
                     <a href="#" onClick={handleLogout}>Logout</a>
                 </div>
             </aside>
-
             <div className="main-content">
 
         <div className="facility-info" onClick={handleFacilityImageClick} style={{ cursor: 'pointer' }}>
