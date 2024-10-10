@@ -24,6 +24,7 @@ function AdminDashboardPage() {
   
     const [facilityAddress, setFacilityAddress] = useState('Set your facility address');
     const [isFacilityModalOpen, setIsFacilityModalOpen] = useState(false);
+    const [therapyService, setTherapyService] = useState(''); 
 
     const [totalUsers, setTotalUsers] = useState(0);
     const [therapistUsers, setTherapistUsers] = useState(0);
@@ -65,11 +66,12 @@ function AdminDashboardPage() {
                     setFacilityImage(data.image || '/path-to-default-facility.jpg');
                     setFacilityDescription(data.description || 'Set your facility description');
                     setFacilityAddress(data.address || 'Set your facility address.');
+                    setTherapyService(data.therapyService || ''); // Retrieve therapy service here
                     setCurrentDocId(doc.id);
                     found = true;
                 }
             });
-
+    
             if (!found) {
                 console.error("No document found with this email.");
                 setError("No document found with this email.");
@@ -78,7 +80,7 @@ function AdminDashboardPage() {
             console.error("Error fetching facility data:", error);
             setError("Failed to fetch facility data.");
         }
-    };
+    };    
 
     const handleUpdateClick = async () => {
         try {
@@ -86,39 +88,56 @@ function AdminDashboardPage() {
                 name: facilityName,
                 description: facilityDescription,
                 address: facilityAddress,
+                therapyService: therapyService  // Include therapy service in the update
             };
-
+    
             if (selectedImageFile && currentDocId) {
-                // Upload image to Firebase Storage
                 const storageRef = ref(storage, `facilityImages/${selectedImageFile.name}`);
                 await uploadBytes(storageRef, selectedImageFile);
                 const downloadURL = await getDownloadURL(storageRef);
-                updatedData.image = downloadURL;  // Add image URL to updated data
+                updatedData.image = downloadURL;
             }
-
-            // Update Firestore document with new data (name, description, address, and image if available)
+    
             if (currentDocId) {
                 const docRef = doc(db, "Users", "facility", "userFacility", currentDocId);
                 await updateDoc(docRef, updatedData);
+                setFacilityImage(updatedData.image || facilityImage);
+    
+           // Update the clinic_services collection inside userFacility
+            const updateClinicService = async (facilityId, currentDocId, facilityDescription) => {
+                try {
+                    // Reference to the specific document inside clinic_services
+                    const clinicServiceRef = doc(
+                        db, 
+                        "Users", 
+                        "facility", 
+                        "userFacility", 
+                        facilityId,  // The document ID of the facility
+                        "clinic_services", 
+                        currentDocId  // The document ID of the clinic service
+                    );
 
-                setFacilityImage(updatedData.image || facilityImage);  // If image updated, reflect it
-                setError(null);
-                setIsFacilityModalOpen(false);  // Close the modal
-                setSelectedImageFile(null);  // Clear the selected file after update
+                    // Update the description field of the clinic_services document
+                    await updateDoc(clinicServiceRef, {
+                        description: facilityDescription
+                    });
 
-                // Trigger SweetAlert success message
+                    console.log("Clinic service updated successfully!");
+                } catch (error) {
+                    console.error("Error updating clinic service: ", error);
+                }
+            };
+                
                 Swal.fire({
                     icon: 'success',
                     title: 'Profile Updated!',
-                    text: 'Your facility information has been successfully updated.',
+                    text: 'Your facility information and clinic services description have been successfully updated.',
                     confirmButtonText: 'Okay'
                 });
+                setIsFacilityModalOpen(false);
             }
         } catch (error) {
             console.error("Error updating facility data:", error);
-            setError("Failed to update the facility information. Please try again.");
-
-            // Trigger SweetAlert error message
             Swal.fire({
                 icon: 'error',
                 title: 'Update Failed',
@@ -127,6 +146,7 @@ function AdminDashboardPage() {
             });
         }
     };
+    
 
         const handleImageUpload = (e) => {
         const file = e.target.files[0];
@@ -395,61 +415,70 @@ function AdminDashboardPage() {
             </section>
             </main>
 
-            {/* Modal for facility image and details */}
-                {isFacilityModalOpen && (
-                    <div className="modal">
-                        <div className="modal-content">
-                            <div className="modal-header">
-                                <img
-                                    src={facilityImage}
-                                    alt="Facility"
-                                    className="modal-facility-img"
-                                    onClick={() => document.getElementById('imageUpload').click()}
-                                />
-                                <input
-                                    type="file"
-                                    id="imageUpload"
-                                    accept="image/*"
-                                    style={{ display: 'none' }}
-                                    onChange={handleImageUpload}
+ {/* Modal for facility image and details */}
+ {isFacilityModalOpen && (
+                <div className="modal">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <img
+                                src={facilityImage}
+                                alt="Facility"
+                                className="modal-facility-img"
+                                onClick={() => document.getElementById('imageUpload').click()}
+                            />
+                            <input
+                                type="file"
+                                id="imageUpload"
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                onChange={(e) => setSelectedImageFile(e.target.files[0])}
+                            />
+                        </div>
+
+                        <div className="modal-body">
+                            <div className="modal-section">
+                                <label>Facility Name</label>
+                                <input 
+                                    type="text" 
+                                    value={facilityName} 
+                                    onChange={(e) => setFacilityName(e.target.value)} 
                                 />
                             </div>
 
-                            <div className="modal-body">
-                                <div className="modal-section">
-                                    <label>Facility Name</label>
-                                    <input 
-                                        type="text" 
-                                        value={facilityName} 
-                                        onChange={(e) => setFacilityName(e.target.value)}  // Allow editing of Facility Name
-                                    />
-                                </div>
-
-                                <div className="modal-section description">
-                                    <label>Facility Description</label>
-                                    <textarea 
-                                        value={facilityDescription} 
-                                        onChange={(e) => setFacilityDescription(e.target.value)}  // Allow editing of Description
-                                    />
-                                </div>
-
-                                <div className="modal-section">
-                                    <label>Facility Address</label>
-                                    <input 
-                                        type="text" 
-                                        value={facilityAddress} 
-                                        onChange={(e) => setFacilityAddress(e.target.value)}  // Allow editing of Address
-                                    />
-                                </div>
+                            <div className="modal-section description">
+                                <label>Facility Description</label>
+                                <textarea 
+                                    value={facilityDescription} 
+                                    onChange={(e) => setFacilityDescription(e.target.value)} 
+                                />
                             </div>
 
-                            <div className="modal-footer">
-                                <button className="btn-update" onClick={handleUpdateClick}>UPDATE</button>
-                                <button className="btn-cancel" onClick={closeFacilityModal}>CANCEL</button>
+                            <div className="modal-section">
+                                <label>Facility Address</label>
+                                <input 
+                                    type="text" 
+                                    value={facilityAddress} 
+                                    onChange={(e) => setFacilityAddress(e.target.value)} 
+                                />
+                            </div>
+
+                            <div className="modal-section">
+                                <label>Therapy Services</label>  {/* New field for therapy services */}
+                                <textarea
+                                    value={therapyService}
+                                    placeholder="Enter therapy services (optional)"
+                                    onChange={(e) => setTherapyService(e.target.value)}  // Handle input change
+                                />
                             </div>
                         </div>
+
+                        <div className="modal-footer">
+                            <button className="btn-update" onClick={handleUpdateClick}>UPDATE</button>
+                            <button className="btn-cancel" onClick={() => setIsFacilityModalOpen(false)}>CANCEL</button>
+                        </div>
                     </div>
-                )}
+                </div>
+            )}
         </div>
     );
 }

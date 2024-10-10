@@ -12,7 +12,7 @@ function ChangePasswordPage() {
         password: '',
         confirmPassword: ''
     });
-    const [showPassword, setShowPassword] = useState(false);
+    const [showPassword, setShowPassword] = useState(true);
     const [userEmail, setUserEmail] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
@@ -71,14 +71,20 @@ function ChangePasswordPage() {
                 const clinicServicesRef = collection(docSnapshot.ref, "clinic_services");
                 const clinicServicesSnapshot = await getDocs(clinicServicesRef);
     
-                // Copy each clinic_services document to the new location
+                // Copy each clinic_services document to the new location using the 'name' field as the document ID
                 clinicServicesSnapshot.forEach(async (serviceDoc) => {
                     const serviceData = serviceDoc.data();
-                    const newServiceRef = doc(newUserFacilityRef, "clinic_services", serviceDoc.id);
-                    await setDoc(newServiceRef, serviceData);
+                    const serviceName = serviceData.name; // Assuming 'name' field exists
+    
+                    if (serviceName) {
+                        const newServiceRef = doc(newUserFacilityRef, "clinic_services", serviceName);
+                        await setDoc(newServiceRef, serviceData);
+                    } else {
+                        console.error("Service document is missing the 'name' field.");
+                    }
                 });
     
-                // Delete the clinic_services subcollection documents
+                // Delete the clinic_services subcollection documents from the old location
                 clinicServicesSnapshot.forEach(async (serviceDoc) => {
                     await deleteDoc(serviceDoc.ref);
                 });
@@ -96,7 +102,7 @@ function ChangePasswordPage() {
             console.error("Error updating password and processing document: ", error);
             setErrorMessage("An error occurred while updating the password. Please try again.");
         }
-    };
+    };    
     
 
     const handleSubmit = async (e) => {

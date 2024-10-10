@@ -242,7 +242,7 @@ const handleImageUpload = (e) => {
           await setDoc(newClinicDocRef, {
             clinic_id: clinic_id.toString(), // Ensure clinic_id is a string
             description: "put your description here", // Static description for now
-            department: facility.name // Use the facility's name for the department
+            name: facility.name // Use the facility's name for the department
           });
   
           // Remove the facility from the pending collection
