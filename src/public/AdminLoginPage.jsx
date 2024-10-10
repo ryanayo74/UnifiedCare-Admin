@@ -161,7 +161,7 @@ function AdminLoginPage() {
               </div>
               <div className="remember-forgot">
                 <label>
-                  <input type="checkbox" /> Remember for 30 days
+                  <input type="checkbox" /> Remember Me
                 </label>
                 <a href="#" onClick={() => navigate('/ForgotPasswordPage')}>Forgot Password?</a>
               </div>

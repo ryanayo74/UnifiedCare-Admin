@@ -231,6 +231,20 @@ const handleImageUpload = (e) => {
             emailVerified: false, // Initially set as false
           });
   
+          // Add clinic_services to the facility with a generated 3-digit clinic_id
+          const clinicServicesRef = collection(userFacilityRef, "clinic_services");
+  
+          // Generate a random 3-digit clinic_id
+          const clinic_id = Math.floor(Math.random() * 900) + 100;
+  
+          // Add clinic_services document with the 3-digit clinic_id and facility's name as the department
+          const newClinicDocRef = doc(clinicServicesRef);
+          await setDoc(newClinicDocRef, {
+            clinic_id: clinic_id.toString(), // Ensure clinic_id is a string
+            description: "put your description here", // Static description for now
+            department: facility.name // Use the facility's name for the department
+          });
+  
           // Remove the facility from the pending collection
           const pendingRef = doc(db, "Users", "facility", "pending", facility.id);
           await deleteDoc(pendingRef);
@@ -263,6 +277,7 @@ const handleImageUpload = (e) => {
       }
     });
   };  
+  
 
   const handleReject = async (facilityId) => {
     Swal.fire({
