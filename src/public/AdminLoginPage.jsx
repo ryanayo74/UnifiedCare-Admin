@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, query, where } from "firebase/firestore"; 
-import { signInWithEmailAndPassword } from 'firebase/auth'; // Firebase Auth sign-in function
+import { signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth'; // Firebase Auth sign-in and email verification
 import { db, auth } from '../config/firebase'; // Firebase Auth and Firestore config
 import '../css/AdminLoginPage.css';
 import logo from '../assets/loginLogo.png';
@@ -14,22 +14,33 @@ function AdminLoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false); // State to handle loading screen
   const [showPassword, setShowPassword] = useState(false); // State for password visibility
+  const [verificationSent, setVerificationSent] = useState(false); // Track if verification email was sent
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true); // Start loading spinner
-
     let userAuthenticated = false; // Track if any user has been authenticated
 
     try {
-      // Step 1: Check if the email is part of "userFacility" or "newUserFacility" and authenticate with Firebase Auth
+      // Step 1: Try signing in with Firebase Auth
       try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Step 2: Check in Firestore under "userFacility"
+        // Step 2: Check if the user's email is verified
+        if (!user.emailVerified) {
+          setLoading(false);
+          setError('Please verify your email first.');
+          if (!verificationSent) {
+            // Send verification email
+            await sendEmailVerification(user);
+            setVerificationSent(true);
+          }
+          return;
+        }
+
         const facilityQuery = query(collection(db, "Users", "facility", "userFacility"), where("email", "==", email));
         const facilitySnapshot = await getDocs(facilityQuery);
 
@@ -41,13 +52,13 @@ function AdminLoginPage() {
             localStorage.setItem('adminEmail', email);
             localStorage.setItem('userType', 'AdminFacility');
             setTimeout(() => {
-              setLoading(false); // Stop loading after 3 seconds
+              setLoading(false);
               navigate('/AdminDashboardPage');
             }, 3000);
           }
         });
 
-        // Step 3: If not found in "userFacility", check in "newUserFacility"
+
         if (!userAuthenticated) {
           const newUserQuery = query(collection(db, "Users", "facility", "newUserFacility"), where("email", "==", email));
           const newUserSnapshot = await getDocs(newUserQuery);
@@ -70,7 +81,7 @@ function AdminLoginPage() {
         setError('Incorrect email or password.');
       }
 
-      // Step 4: If not authenticated by Firebase Auth, check if the user belongs to "adminDevUsers"
+      // Step 4: Check if user belongs to "adminDevUsers"
       if (!userAuthenticated) {
         const adminDevQuery = query(collection(db, "Users", "adminDev", "AdminDevUsers"), where("email", "==", email));
         const adminDevSnapshot = await getDocs(adminDevQuery);
