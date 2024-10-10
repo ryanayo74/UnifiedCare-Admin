@@ -58,21 +58,13 @@ function ChangePasswordPage() {
                 // Update password field in Firestore
                 await updateDoc(docSnapshot.ref, { password: newPassword });
     
-                // Use clinic_id as the document ID
-                const clinicId = userData.clinic_id;
-    
-                if (!clinicId) {
-                    setErrorMessage("No clinic_id found in the user data.");
-                    return;
-                }
-    
                 // Copy the main document to the new "userFacility" collection
                 const newUserData = {
                     ...userData,
                     password: newPassword,
                     timestamp: new Date()
                 };
-                const newUserFacilityRef = doc(db, "Users", "facility", "userFacility", clinicId); // Using clinic_id as document ID
+                const newUserFacilityRef = doc(db, "Users", "facility", "userFacility", docSnapshot.id);
                 await setDoc(newUserFacilityRef, newUserData);
     
                 // Query for the clinic_services subcollection
@@ -105,7 +97,6 @@ function ChangePasswordPage() {
             setErrorMessage("An error occurred while updating the password. Please try again.");
         }
     };
-    
     
 
     const handleSubmit = async (e) => {
