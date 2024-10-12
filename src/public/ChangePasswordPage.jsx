@@ -45,7 +45,7 @@ function ChangePasswordPage() {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    "clinic_id": 999,
+                    "clinic_id": serviceData.clinic_id,
                     "name": serviceData.name,
                     "description": serviceData.description
                 })
