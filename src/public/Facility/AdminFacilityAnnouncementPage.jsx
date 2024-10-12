@@ -18,6 +18,7 @@ function AnnouncementsPage() {
     const [selectedImageFile, setSelectedImageFile] = useState(null);
     const [error, setError] = useState(null);
     const [currentDocId, setCurrentDocId] = useState(null);
+    const [therapyService, setTherapyService] = useState(''); 
     const [message, setMessage] = useState('');
     const [recipient, setRecipient] = useState({
         all: false,
@@ -45,11 +46,12 @@ function AnnouncementsPage() {
                     setFacilityImage(data.image || '/path-to-default-facility.jpg');
                     setFacilityDescription(data.description || 'Set your facility description');
                     setFacilityAddress(data.address || 'Set your facility address.');
+                    setTherapyService(data.therapyService || ''); // Retrieve therapy service here
                     setCurrentDocId(doc.id);
                     found = true;
                 }
             });
-
+    
             if (!found) {
                 console.error("No document found with this email.");
                 setError("No document found with this email.");
@@ -58,7 +60,7 @@ function AnnouncementsPage() {
             console.error("Error fetching facility data:", error);
             setError("Failed to fetch facility data.");
         }
-    };
+    };    
 
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
@@ -77,7 +79,7 @@ function AnnouncementsPage() {
                 description: facilityDescription,
                 address: facilityAddress,
             };
-
+    
             if (selectedImageFile && currentDocId) {
                 // Upload image to Firebase Storage
                 const storageRef = ref(storage, `facilityImages/${selectedImageFile.name}`);
@@ -85,39 +87,46 @@ function AnnouncementsPage() {
                 const downloadURL = await getDownloadURL(storageRef);
                 updatedData.image = downloadURL;  // Add image URL to updated data
             }
-
-            // Update Firestore document with new data (name, description, address, and image if available)
+    
+            // Update Firestore document for facility profile
             if (currentDocId) {
                 const docRef = doc(db, "Users", "facility", "userFacility", currentDocId);
                 await updateDoc(docRef, updatedData);
-
+    
+                // Updating the 'clinic_services' collection with new name and description
+                const clinicServicesRef = doc(db, "Users", "facility", "userFacility", currentDocId, "clinic_services", currentDocId); // Replace 'serviceDocId' with your document ID
+                await setDoc(clinicServicesRef, {
+                    name: facilityName,
+                    description: facilityDescription
+                }, { merge: true });  // Use merge to update fields without overwriting other data
+    
                 setFacilityImage(updatedData.image || facilityImage);  // If image updated, reflect it
                 setError(null);
                 setIsFacilityModalOpen(false);  // Close the modal
                 setSelectedImageFile(null);  // Clear the selected file after update
-
+    
                 // Trigger SweetAlert success message
                 Swal.fire({
                     icon: 'success',
-                    title: 'Profile Updated!',
-                    text: 'Your facility information has been successfully updated.',
+                    title: 'Profile and Clinic Services Updated!',
+                    text: 'Your facility and clinic services information have been successfully updated.',
                     confirmButtonText: 'Okay'
                 });
             }
         } catch (error) {
             console.error("Error updating facility data:", error);
-            setError("Failed to update the facility information. Please try again.");
-
+            setError("Failed to update the facility and clinic services information. Please try again.");
+    
             // Trigger SweetAlert error message
             Swal.fire({
                 icon: 'error',
                 title: 'Update Failed',
-                text: 'There was an error updating your facility information.',
+                text: 'There was an error updating your facility and clinic services information.',
                 confirmButtonText: 'Try Again'
             });
         }
     };
-
+    
     const handleFacilityImageClick = () => {
         setIsFacilityModalOpen(true);
     };
@@ -266,6 +275,15 @@ function AnnouncementsPage() {
                                         onChange={(e) => setFacilityAddress(e.target.value)}  // Allow editing of Address
                                     />
                                 </div>
+
+                                <div className="modal-section">
+                                <label>Therapy Services</label>  {/* New field for therapy services */}
+                                <textarea
+                                    value={therapyService}
+                                    placeholder="Enter therapy services (optional)"
+                                    onChange={(e) => setTherapyService(e.target.value)}  // Handle input change
+                                />
+                            </div>
                             </div>
 
                             <div className="modal-footer">
