@@ -37,9 +37,35 @@ function ChangePasswordPage() {
         setShowPassword(!showPassword);
     };
 
+    const postClinicServiceToAPI = async (serviceData) => {
+        try {
+            const response = await fetch('/api/clinic_services', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    "clinic_id": 999,
+                    "name": serviceData.name,
+                    "description": serviceData.description
+                })
+            });
+    
+            if (response.ok) {
+                console.log('Service posted successfully');
+                alert('Service posted successfully');
+            } else {
+                console.error('Failed to post service', response.statusText);
+                alert('Failed to post service: ' + response.statusText);
+            }
+        } catch (error) {
+            console.error('Error posting clinic service:', error);
+            alert('Error posting clinic service: ' + error.message);
+        }
+    };
+    
     const updatePasswordAndCopyDocument = async (email, newPassword) => {
         try {
-            // Query Firestore for the user's document
             const userQuery = query(
                 collection(db, "Users", "facility", "newUserFacility"),
                 where("email", "==", email)
@@ -51,14 +77,10 @@ function ChangePasswordPage() {
                 return;
             }
     
-            // Process each document in the querySnapshot
             querySnapshot.forEach(async (docSnapshot) => {
                 const userData = docSnapshot.data();
-    
-                // Update password field in Firestore
                 await updateDoc(docSnapshot.ref, { password: newPassword });
     
-                // Copy the main document to the new "userFacility" collection
                 const newUserData = {
                     ...userData,
                     password: newPassword,
@@ -67,43 +89,39 @@ function ChangePasswordPage() {
                 const newUserFacilityRef = doc(db, "Users", "facility", "userFacility", docSnapshot.id);
                 await setDoc(newUserFacilityRef, newUserData);
     
-                // Query for the clinic_services subcollection
                 const clinicServicesRef = collection(docSnapshot.ref, "clinic_services");
                 const clinicServicesSnapshot = await getDocs(clinicServicesRef);
     
-                // Copy each clinic_services document to the new location using the 'name' field as the document ID
                 clinicServicesSnapshot.forEach(async (serviceDoc) => {
                     const serviceData = serviceDoc.data();
-                    const serviceName = serviceData.name; // Assuming 'name' field exists
+                    const serviceName = serviceData.name;
     
                     if (serviceName) {
                         const newServiceRef = doc(newUserFacilityRef, "clinic_services", serviceName);
                         await setDoc(newServiceRef, serviceData);
+    
+                        // Post each clinic service to your API
+                        await postClinicServiceToAPI(serviceData);
                     } else {
                         console.error("Service document is missing the 'name' field.");
                     }
                 });
     
-                // Delete the clinic_services subcollection documents from the old location
                 clinicServicesSnapshot.forEach(async (serviceDoc) => {
                     await deleteDoc(serviceDoc.ref);
                 });
     
-                // Delete the main document from newUserFacility collection
                 await deleteDoc(docSnapshot.ref);
     
                 setSuccessMessage("Password updated and user data moved successfully, including clinic services.");
             });
     
-            // Navigate to AdminDashboardPage
             navigate('/AdminDashboardPage');
-    
         } catch (error) {
             console.error("Error updating password and processing document: ", error);
             setErrorMessage("An error occurred while updating the password. Please try again.");
         }
     };    
-    
 
     const handleSubmit = async (e) => {
         e.preventDefault();
