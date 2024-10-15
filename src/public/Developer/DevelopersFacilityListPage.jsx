@@ -167,18 +167,27 @@ const handleDeleteFacility = async () => {
   if (selectedFacility && selectedFacility.id && selectedFacility.email) {
     setIsLoading(true); // Show loading modal
     try {
-      // Step 1: Delete facility document from Firestore
       const docRef = doc(db, "Users", "facility", "userFacility", selectedFacility.id);
+
+      // Step 1: Delete all documents in the "clinic_services" subcollection
+      const clinicServicesRef = collection(docRef, "clinic_services");
+      const clinicServicesSnapshot = await getDocs(clinicServicesRef);
+      const deletePromises = clinicServicesSnapshot.docs.map(async (docSnapshot) => {
+        await deleteDoc(docSnapshot.ref);
+      });
+      await Promise.all(deletePromises); // Wait for all subcollection documents to be deleted
+
+      // Step 2: Delete the main facility document after subcollection is deleted
       await deleteDoc(docRef);
-      
-      // Step 2: Call the Cloud Function to delete the user's Firebase Authentication account
+
+      // Step 3: Call the Cloud Function to delete the user's Firebase Authentication account
       const functions = getFunctions();
       const deleteAuthUser = httpsCallable(functions, 'deleteFacilityAuthUser');
       await deleteAuthUser({ email: selectedFacility.email });
 
-      // Refresh facility list after deletion
+      // Step 4: Refresh facility list after deletion
       fetchFacility();
-      
+
       // Show success message using SweetAlert
       Swal.fire(
         'Deleted!',
@@ -188,7 +197,7 @@ const handleDeleteFacility = async () => {
     } catch (error) {
       console.error("Error deleting facility:", error);
       setError("Failed to delete facility.");
-      
+
       // Show error message using SweetAlert if deletion fails
       Swal.fire({
         title: 'Error!',
@@ -201,6 +210,7 @@ const handleDeleteFacility = async () => {
     }
   }
 };
+
 
   
   const closeDeleteConfirm = () => {

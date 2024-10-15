@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'; 
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc, runTransaction } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
 import { auth } from '../../config/firebase';
@@ -215,7 +215,7 @@ const handleImageUpload = (e) => {
   
           // Create a new user with email and password
           const { user } = await createUserWithEmailAndPassword(auth, facility.email, 'admin123');
-          
+  
           // Send verification email
           await sendEmailVerification(user);
   
@@ -231,19 +231,36 @@ const handleImageUpload = (e) => {
             emailVerified: false, // Initially set as false
           });
   
-          // Add clinic_services to the facility with a generated 3-digit clinic_id
+          // Add clinic_services to the facility
           const clinicServicesRef = collection(userFacilityRef, "clinic_services");
   
-          // Generate a random 3-digit clinic_id
-          const clinic_id = Math.floor(Math.random() * 900) + 100;
-  
-          // Add clinic_services document with the 3-digit clinic_id and facility's name as the department
-          const newClinicDocRef = doc(clinicServicesRef);
-          await setDoc(newClinicDocRef, {
-            clinic_id: clinic_id.toString(), // Ensure clinic_id is a string
-            description: "put your description here", // Static description for now
-            name: facility.name // Use the facility's name for the department
+          // Retrieve and update the global clinic_id counter
+          const globalCounterRef = doc(db, "counters", "clinicServiceCounter");
+          let clinic_id = 1; // Default value
+
+          await runTransaction(db, async (transaction) => {
+            const counterDoc = await transaction.get(globalCounterRef);
+            
+            if (!counterDoc.exists()) {
+              // If the document doesn't exist, create it with clinic_id starting at 1
+              transaction.set(globalCounterRef, { lastClinicId: 1 });
+              clinic_id = 1;
+            } else {
+              // Increment the lastClinicId and update the document
+              const newClinicId = counterDoc.data().lastClinicId + 1;
+              transaction.update(globalCounterRef, { lastClinicId: newClinicId });
+              clinic_id = newClinicId;
+            }
+            
+            // Add the new clinic service with the incremented clinic_id
+            const newClinicDocRef = doc(clinicServicesRef);
+            transaction.set(newClinicDocRef, {
+              clinic_id: clinic_id.toString(), // Ensure clinic_id is a string
+              description: "put your description here",
+              name: facility.name
+            });
           });
+          
   
           // Remove the facility from the pending collection
           const pendingRef = doc(db, "Users", "facility", "pending", facility.id);
@@ -276,7 +293,9 @@ const handleImageUpload = (e) => {
         }
       }
     });
-  };  
+  };
+  
+  
   
 
   const handleReject = async (facilityId) => {
