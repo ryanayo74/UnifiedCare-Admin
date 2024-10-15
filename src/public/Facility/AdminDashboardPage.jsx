@@ -5,6 +5,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
 import { Bar } from 'react-chartjs-2';
 import { Line } from 'react-chartjs-2';
+import LeafletMap from '../LeafletMap';
 import Swal from 'sweetalert2';
 import loginImage from '../../assets/unifiedcarelogo.png';
 import '../../css/AdminDashboardPage.css';
@@ -36,6 +37,7 @@ function AdminDashboardPage() {
     const [additionalImages, setAdditionalImages] = useState(Array(5).fill(null));
     const [uploadedImages, setUploadedImages] = useState(Array(5).fill(null)); // To hold URLs of uploaded images
     const [modalPage, setModalPage] = useState(1);  // Page navigation in the modal
+    const [showMap, setShowMap] = useState(false);
    
 
     useEffect(() => {
@@ -183,7 +185,10 @@ function AdminDashboardPage() {
             alert('Error updating clinic service: ' + error.message);
         }
     };
-    
+
+    const handleAddressClick = () => {
+        setShowMap(true);
+      };
 
     const closeFacilityModal = () => {
         setIsFacilityModalOpen(false);
@@ -395,13 +400,23 @@ function AdminDashboardPage() {
                     onChange={(e) => setFacilityDescription(e.target.value)}
                 />
             </div>
+                    <div>
             <div className="modal-section">
                 <label>Facility Address</label>
                 <input
-                    type="text"
-                    value={facilityAddress}
-                    onChange={(e) => setFacilityAddress(e.target.value)}
+                type="text"
+                value={facilityAddress}
+                onClick={handleAddressClick}
+                readOnly
                 />
+            </div>
+
+            {showMap && (
+                <LeafletMap onSelectAddress={(address) => {
+                setFacilityAddress(address);
+                setShowMap(false); // Close the map after selecting the address
+                }} />
+            )}
             </div>
             <div className="modal-section">
                 <label>Therapy Services</label>
