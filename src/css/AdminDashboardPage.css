@@ -172,3 +172,141 @@ body {
     color: #333;
     margin: 50px 50px;
 }
+/* Styling for additional image uploads below the profile */
+.additional-images {
+    display: flex;
+    justify-content: space-between;
+    margin: 20px 0;
+}
+
+.upload-icon-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 60px;
+    height: 60px;
+    background-color: #666464;
+    border-radius: 10px;
+    border: 2px solid #ddd;
+    
+    /* Background image */
+    background-image: url('https://cdn.pixabay.com/photo/2017/11/10/05/24/upload-2935442_640.png');
+    background-size: contain;   /* Ensure the image fits inside the container */
+    background-position: center; /* Center the image */
+    background-repeat: no-repeat; /* Prevent image from repeating */
+}
+
+
+.upload-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 24px;
+    color: #333;
+}
+
+.upload-button i {
+    font-size: 24px;
+}
+
+.upload-button:hover {
+    color: #007bff;
+}
+
+.uploaded-images-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px; /* Space between images */
+}
+
+.uploaded-image-preview {
+    width: 100px; /* Set a width for the previews */
+    height: 100px; /* Set a height for the previews */
+    object-fit: cover; /* Ensure images are cropped correctly */
+    border: 1px solid #ccc; /* Add a border for clarity */
+    border-radius: 5px; /* Rounded corners */
+}
+
+
+/* Ensure the modal layout remains clean */
+.modal-header img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.modal-body {
+    margin-top: 20px;
+}
+
+.modal-section {
+    margin-bottom: 15px;
+}
+
+.btn-update, .btn-cancel {
+    margin: 10px;
+    padding: 10px 20px;
+    cursor: pointer;
+    border: none;
+    border-radius: 4px;
+}
+
+.btn-update {
+    background-color: #28a745;
+    color: white;
+}
+
+.btn-cancel {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Page Navigation */
+.page-navigation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.page-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 5px 10px;
+    color: #007bff;
+}
+
+.page-btn:disabled {
+    color: #ccc;
+}
+
+.page-navigation span {
+    margin: 0 10px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* Single Upload More Images Button */
+.upload-more-images {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.upload-more-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.upload-more-btn:hover {
+    background-color: #0056b3;
+}
+

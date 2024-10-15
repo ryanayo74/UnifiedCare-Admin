@@ -8,8 +8,8 @@ import { Line } from 'react-chartjs-2';
 import Swal from 'sweetalert2';
 import loginImage from '../../assets/unifiedcarelogo.png';
 import '../../css/AdminDashboardPage.css';
-
 import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Legend, Tooltip } from 'chart.js';
+
 ChartJS.register(BarElement, CategoryScale, LinearScale, Legend, Tooltip);
 
 function AdminDashboardPage() {
@@ -19,25 +19,24 @@ function AdminDashboardPage() {
     const [facilityImage, setFacilityImage] = useState('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png');
     const [error, setError] = useState(null);
     const [currentDocId, setCurrentDocId] = useState(null);
-    const [facilityDescription, setFacilityDescription] = useState(''); 
+    const [facilityDescription, setFacilityDescription] = useState('');
     const [selectedImageFile, setSelectedImageFile] = useState(null);
-  
     const [facilityAddress, setFacilityAddress] = useState('Set your facility address');
     const [isFacilityModalOpen, setIsFacilityModalOpen] = useState(false);
-    const [therapyService, setTherapyService] = useState(''); 
-
+    const [therapyService, setTherapyService] = useState('');
     const [totalUsers, setTotalUsers] = useState(0);
     const [therapistUsers, setTherapistUsers] = useState(0);
     const [parentUsers, setParentUsers] = useState(0);
-    const [parentData, setParentData] = useState(new Array(12).fill(0)); // Data for all 12 months
-    const [therapistData, setTherapistData] = useState(new Array(12).fill(0)); // Data for all 12 months
-
+    const [parentData, setParentData] = useState(new Array(12).fill(0));
+    const [therapistData, setTherapistData] = useState(new Array(12).fill(0));
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-    const [years, setYears] = useState([]); // List of years for the dropdown
-
-    const [viewMode, setViewMode] = useState('userData'); // Default to 'userData'
+    const [years, setYears] = useState([]);
+    const [viewMode, setViewMode] = useState('userData');
     const [averageSessionData, setAverageSessionData] = useState(new Array(12).fill(0));
-
+    const [additionalImages, setAdditionalImages] = useState(Array(5).fill(null));
+    const [uploadedImages, setUploadedImages] = useState(Array(5).fill(null)); // To hold URLs of uploaded images
+    const [modalPage, setModalPage] = useState(1);  // Page navigation in the modal
+   
 
     useEffect(() => {
         const email = localStorage.getItem('adminEmail');
@@ -47,7 +46,6 @@ function AdminDashboardPage() {
         }
         fetchYears(); // Fetch the years when users were created
     }, []);
-    
 
     useEffect(() => {
         if (years.length > 0) {
@@ -66,12 +64,12 @@ function AdminDashboardPage() {
                     setFacilityImage(data.image || '/path-to-default-facility.jpg');
                     setFacilityDescription(data.description || 'Set your facility description');
                     setFacilityAddress(data.address || 'Set your facility address.');
-                    setTherapyService(data.therapyService || ''); // Retrieve therapy service here
+                    setTherapyService(data.therapyService || '');
                     setCurrentDocId(doc.id);
                     found = true;
                 }
             });
-    
+
             if (!found) {
                 console.error("No document found with this email.");
                 setError("No document found with this email.");
@@ -80,7 +78,7 @@ function AdminDashboardPage() {
             console.error("Error fetching facility data:", error);
             setError("Failed to fetch facility data.");
         }
-    };    
+    };
 
     const handleUpdateClick = async () => {
         try {
@@ -94,31 +92,49 @@ function AdminDashboardPage() {
                 // Upload image to Firebase Storage
                 const storageRef = ref(storage, `facilityImages/${selectedImageFile.name}`);
                 await uploadBytes(storageRef, selectedImageFile);
+    
+                // Get the download URL for the uploaded image
                 const downloadURL = await getDownloadURL(storageRef);
-                updatedData.image = downloadURL;  // Add image URL to updated data
+                updatedData.image = downloadURL; // This URL should be saved to Firestore
             }
     
-            // Update Firestore document for facility profile
+            // Upload additional images
+            const additionalImageURLs = await Promise.all(additionalImages.map(async (imageFile) => {
+                if (imageFile) {
+                    const storageRef = ref(storage, `facilityImages/${imageFile.name}`);
+                    await uploadBytes(storageRef, imageFile);
+                    return await getDownloadURL(storageRef);
+                }
+                return null;
+            }));
+    
+            updatedData.additionalImages = additionalImageURLs.filter(Boolean); // Filter out any null values
+    
             if (currentDocId) {
                 const docRef = doc(db, "Users", "facility", "userFacility", currentDocId);
                 await updateDoc(docRef, updatedData);
     
-                // Updating the 'clinic_services' collection with new name and description
+                // Update the clinic service in Firestore (optional, depending on your structure)
                 const clinicServicesRef = doc(db, "Users", "facility", "userFacility", currentDocId, "clinic_services", currentDocId);
                 await setDoc(clinicServicesRef, {
                     name: facilityName,
                     description: facilityDescription
-                }, { merge: true });  // Use merge to update fields without overwriting other data
+                }, { merge: true });
     
-                // Call your API to update clinic services
-                await updateClinicServicesAPI(currentDocId, facilityName, facilityDescription);
+                // Call the API to update the clinic service
+                await postClinicServiceToAPI({
+                    clinic_id: currentDocId,
+                    name: facilityName,
+                    description: facilityDescription
+                });
     
-                setFacilityImage(updatedData.image || facilityImage);  // If image updated, reflect it
+                setFacilityImage(updatedData.image || facilityImage);
+                setAdditionalImages(Array(5).fill(null)); // Reset additional images
                 setError(null);
-                setIsFacilityModalOpen(false);  // Close the modal
-                setSelectedImageFile(null);  // Clear the selected file after update
+                setIsFacilityModalOpen(false);
+                setSelectedImageFile(null);
+                setUploadedImages(additionalImageURLs); // Update uploaded images
     
-                // Trigger SweetAlert success message
                 Swal.fire({
                     icon: 'success',
                     title: 'Profile and Clinic Services Updated!',
@@ -130,7 +146,6 @@ function AdminDashboardPage() {
             console.error("Error updating facility data:", error);
             setError("Failed to update the facility and clinic services information. Please try again.");
     
-            // Trigger SweetAlert error message
             Swal.fire({
                 icon: 'error',
                 title: 'Update Failed',
@@ -139,44 +154,60 @@ function AdminDashboardPage() {
             });
         }
     };
+
+    //need to fix updating API
+    const postClinicServiceToAPI = async (serviceData) => {
+        try {
+            const response = await fetch(`http://capstone_ai.codehit.net/clinic_services/103`, {
+                method: 'PUT',  // Use PUT to update the data
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    "clinic_id": serviceData.clinic_id,
+                    "department": serviceData.department,
+                    "description": serviceData.description,
+                    "name": serviceData.name
+                })
+            });
     
-// Function to update the API with the new clinic services
-const updateClinicServicesAPI = async (docId, name, description) => {
-    const payload = {
-        docId,
-        name,
-        description,
+            if (response.ok) {
+                console.log('Service updated successfully');
+                alert('Service updated successfully');
+            } else {
+                console.error('Failed to update service', response.statusText);
+                alert('Failed to update service: ' + response.statusText);
+            }
+        } catch (error) {
+            console.error('Error updating clinic service:', error);
+            alert('Error updating clinic service: ' + error.message);
+        }
+    };
+    
+
+    const closeFacilityModal = () => {
+        setIsFacilityModalOpen(false);
+        setModalPage(1);  // Reset to the first page when the modal is closed
     };
 
-    try {
-        const response = await fetch(`/api/clinic_services/${docId}`, {
-            method: 'PUT', // or 'PATCH' depending on your API
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to update API');
-        }
-
-        const result = await response.json();
-        console.log('API update successful:', result);
-    } catch (error) {
-        console.error('Error updating API:', error);
-    }
-};
-
-        const handleImageUpload = (e) => {
+    const handleImageUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
-            setSelectedImageFile(file);  // Store the selected image file in state
+            setSelectedImageFile(file);  // This line should correctly set the image file
             const imagePreviewURL = URL.createObjectURL(file);
-            setFacilityImage(imagePreviewURL);  // Optionally, show a preview of the selected image
+            setFacilityImage(imagePreviewURL);  // Ensure you're previewing the right image
             setError(null);
         }
     };
+    
+
+    const handleMoreImagesUpload = (e) => {
+        const files = Array.from(e.target.files);  // Get all the uploaded files
+        const newImages = files.map((file) => URL.createObjectURL(file));  // Create URLs for each image
+    
+        setUploadedImages((prevImages) => [...prevImages, ...newImages]);  // Append new images to the existing ones
+    };
+    
 
     const fetchYears = async () => {
         try {
@@ -204,7 +235,7 @@ const updateClinicServicesAPI = async (docId, name, description) => {
             const yearArray = Array.from(yearSet).sort((a, b) => a - b);
             setYears(yearArray);
             if (!yearArray.includes(selectedYear)) {
-                setSelectedYear(yearArray[0]); // Set the default selected year to the earliest year if the current year is not in the list
+                setSelectedYear(yearArray[0]);
             }
         } catch (error) {
             console.error("Error fetching years:", error);
@@ -220,7 +251,6 @@ const updateClinicServicesAPI = async (docId, name, description) => {
             const therapistCount = therapistSnapshot.size;
             const parentCount = parentSnapshot.size;
 
-            // Fetch average session durations (replace with your actual logic)
             const sessionSnapshot = await getDocs(collection(db, "Sessions"));
             const sessionDataByMonth = new Array(12).fill(0);
             const sessionCountByMonth = new Array(12).fill(0);
@@ -257,20 +287,20 @@ const updateClinicServicesAPI = async (docId, name, description) => {
                 }
             });
 
-                sessionSnapshot.forEach(doc => {
+            sessionSnapshot.forEach(doc => {
                 const sessionData = doc.data();
                 if (sessionData.sessionDuration && sessionData.createdAt) {
                     const sessionDate = sessionData.createdAt.toDate();
                     if (sessionDate.getFullYear() === year) {
                         const month = sessionDate.getMonth();
-                        sessionDataByMonth[month] += sessionData.sessionDuration; // Assuming sessionDuration is in seconds
+                        sessionDataByMonth[month] += sessionData.sessionDuration;
                         sessionCountByMonth[month]++;
                     }
                 }
             });
 
             const avgSessionDurationByMonth = sessionDataByMonth.map((totalDuration, index) =>
-            sessionCountByMonth[index] > 0 ? totalDuration / sessionCountByMonth[index] : 0
+                sessionCountByMonth[index] > 0 ? totalDuration / sessionCountByMonth[index] : 0
             );
 
             setParentData(parentCountByMonth);
@@ -286,7 +316,6 @@ const updateClinicServicesAPI = async (docId, name, description) => {
         setSelectedYear(Number(event.target.value));
     };
 
-    // Bar chart data and options
     const data = {
         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
         datasets: [
@@ -317,7 +346,6 @@ const updateClinicServicesAPI = async (docId, name, description) => {
         }
     };
 
-           // Define data and options for the line chart
     const avgSessionData = {
         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
         datasets: [
@@ -340,43 +368,58 @@ const updateClinicServicesAPI = async (docId, name, description) => {
         }
     };
 
-    {viewMode === 'avgSession' ? (
-        <div className="chart-container">
-            <Line data={avgSessionData} options={avgSessionOptions} />
-        </div>
-    ) : (
-        // Existing Bar chart
-        <div className="chart-container">
-            <Bar data={data} options={options} />
-        </div>
-    )}
-
-        // Toggle between userData and avgSession
-    const handleModeChange = (event) => {
-            setViewMode(event.target.value);
-    };
-
     const handleFacilityImageClick = () => {
         setIsFacilityModalOpen(true);
     };
 
-    const closeFacilityModal = () => {
-        setIsFacilityModalOpen(false);
-        setSelectedImageFile(null);  // Clear selected file if modal is closed
-    };
-    
     const handleLogout = () => {
         localStorage.removeItem('isAuthenticated');
         localStorage.removeItem('adminEmail');
         navigate('/AdminLoginPage');
     };
 
+    const renderModalContent = () => (
+        <div className="modal-body">
+            <div className="modal-section">
+                <label>Facility Name</label>
+                <input
+                    type="text"
+                    value={facilityName}
+                    onChange={(e) => setFacilityName(e.target.value)}
+                />
+            </div>
+            <div className="modal-section description">
+                <label>Facility Description</label>
+                <textarea
+                    value={facilityDescription}
+                    onChange={(e) => setFacilityDescription(e.target.value)}
+                />
+            </div>
+            <div className="modal-section">
+                <label>Facility Address</label>
+                <input
+                    type="text"
+                    value={facilityAddress}
+                    onChange={(e) => setFacilityAddress(e.target.value)}
+                />
+            </div>
+            <div className="modal-section">
+                <label>Therapy Services</label>
+                <textarea
+                    value={therapyService}
+                    placeholder="Enter therapy services (optional)"
+                    onChange={(e) => setTherapyService(e.target.value)}
+                />
+            </div>
+        </div>
+    );
+
     return (
         <div className="dashboard-container">
             <aside className="sidebar">
                 <div className="logo-container">
-                <img src={loginImage} alt="Logo" />
-                <h2>UnifiedCare</h2>
+                    <img src={loginImage} alt="Logo" />
+                    <h2>UnifiedCare</h2>
                 </div>
                 <nav className="menu">
                     <a href="#" className="menu-item">Dashboard</a>
@@ -402,103 +445,125 @@ const updateClinicServicesAPI = async (docId, name, description) => {
                     {error && <p className="error">{error}</p>}
                 </div>
 
-                <section className="dashboard"> 
-                     <h2 className='userText'>Users</h2>
-                <div className="year-selector">
-                    <label htmlFor="year">Select Year:</label>
-                    <select id="year" value={selectedYear} onChange={handleYearChange}>
-                        {years.map(year => (
-                            <option key={year} value={year}>{year}</option>
-                        ))}
-                    </select>
-                </div>
-
-                {/* Conditionally render either Bar or Line chart based on viewMode */}
-                {viewMode === 'avgSession' ? (
-                     <div className="chart-container">
-                        <Line data={avgSessionData} options={avgSessionOptions} />
+                <section className="dashboard">
+                    <h2 className='userText'>Users</h2>
+                    <div className="year-selector">
+                        <label htmlFor="year">Select Year:</label>
+                        <select id="year" value={selectedYear} onChange={handleYearChange}>
+                            {years.map(year => (
+                                <option key={year} value={year}>{year}</option>
+                            ))}
+                        </select>
                     </div>
-                ) : (
-                    <div className="chart-container">
-                    <Bar data={data} options={options} />
-                    </div>
-                )}
 
-                <div className="user-stats">
-                    <p>Total users: <span>{totalUsers}</span></p>
-                    <p>Therapist users: <span>{therapistUsers}</span></p>
-                    <p>Parent users: <span>{parentUsers}</span></p>
-                    <p>Average Session Duration: <span>3m 12s</span></p>
-                    <button onClick={() => setViewMode('userData')} className="user-data-btn">User Data</button>    
-                    <button onClick={() => setViewMode('avgSession')} className="avg-session-btn">Avg Session</button>
-                </div>
-            </section>
+                    {/* Conditionally render either Bar or Line chart based on viewMode */}
+                    {viewMode === 'avgSession' ? (
+                        <div className="chart-container">
+                            <Line data={avgSessionData} options={avgSessionOptions} />
+                        </div>
+                    ) : (
+                        <div className="chart-container">
+                            <Bar data={data} options={options} />
+                        </div>
+                    )}
+
+                    <div className="user-stats">
+                        <p>Total users: <span>{totalUsers}</span></p>
+                        <p>Therapist users: <span>{therapistUsers}</span></p>
+                        <p>Parent users: <span>{parentUsers}</span></p>
+                        <p>Average Session Duration: <span>3m 12s</span></p>
+                        <button onClick={() => setViewMode('userData')} className="user-data-btn">User Data</button>
+                        <button onClick={() => setViewMode('avgSession')} className="avg-session-btn">Avg Session</button>
+                    </div>
+                </section>
             </main>
 
- {/* Modal for facility image and details */}
- {isFacilityModalOpen && (
-                    <div className="modal">
-                        <div className="modal-content">
-                            <div className="modal-header">
-                                <img
-                                    src={facilityImage}
-                                    alt="Facility"
-                                    className="modal-facility-img"
-                                    onClick={() => document.getElementById('imageUpload').click()}
-                                />
-                                <input
-                                    type="file"
-                                    id="imageUpload"
-                                    accept="image/*"
-                                    style={{ display: 'none' }}
-                                    onChange={handleImageUpload}
-                                />
-                            </div>
+{/* Facility Modal */}
+{isFacilityModalOpen && (
+    <div className="modal">
+        <div className="modal-content">
+            <div className="modal-header">
+                <img
+                    src={facilityImage}
+                    alt="Facility"
+                    className="modal-facility-img"
+                    onClick={() => document.getElementById('profileImageUpload').click()}
+                />
+                <input
+                    type="file"
+                    id="profileImageUpload"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={handleImageUpload}
+                />
+            </div>
 
-                            <div className="modal-body">
-                                <div className="modal-section">
-                                    <label>Facility Name</label>
-                                    <input 
-                                        type="text" 
-                                        value={facilityName} 
-                                        onChange={(e) => setFacilityName(e.target.value)}  // Allow editing of Facility Name
-                                    />
-                                </div>
+            {/* Page Indicator */}
+            <div className="page-navigation">
+                <button
+                    className="page-btn"
+                    onClick={() => setModalPage((prev) => prev - 1)}
+                    disabled={modalPage === 1}
+                >
+                    &lt;
+                </button>
+                <span>{`Page ${modalPage} of 2`}</span>
+                <button
+                    className="page-btn"
+                    onClick={() => setModalPage((prev) => prev + 1)}
+                    disabled={modalPage === 2}
+                >
+                    &gt;
+                </button>
+            </div>
 
-                                <div className="modal-section description">
-                                    <label>Facility Description</label>
-                                    <textarea 
-                                        value={facilityDescription} 
-                                        onChange={(e) => setFacilityDescription(e.target.value)}  // Allow editing of Description
-                                    />
-                                </div>
+            {/* Conditional Rendering for Modal Pages */}
+            {modalPage === 1 ? renderModalContent() : (
+                <div className="modal-body">
+                    <p>This is the second page. You can add more content here if needed.</p>
+                </div>
+            )}
 
-                                <div className="modal-section">
-                                    <label>Facility Address</label>
-                                    <input 
-                                        type="text" 
-                                        value={facilityAddress} 
-                                        onChange={(e) => setFacilityAddress(e.target.value)}  // Allow editing of Address
-                                    />
-                                </div>
+            {/* Display uploaded images */}
+            <div className="uploaded-images-preview">
+                {uploadedImages.map((image, index) => (
+                    image && (
+                        <img
+                            key={index}
+                            src={image}
+                            alt={`Uploaded Image ${index + 1}`}
+                            className="uploaded-image-preview"
+                        />
+                    )
+                ))}
+            </div>
 
-                                <div className="modal-section">
-                                <label>Therapy Services</label>  {/* New field for therapy services */}
-                                <textarea
-                                    value={therapyService}
-                                    placeholder="Enter therapy services (optional)"
-                                    onChange={(e) => setTherapyService(e.target.value)}  // Handle input change
-                                />
-                            </div>
-                            </div>
+            {/* Single Upload Button for More Images */}
+            <div className="upload-more-images">
+                <input
+                    type="file"
+                    id="moreImageUpload"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    multiple
+                    onChange={handleMoreImagesUpload}
+                />
+                <button
+                    className="upload-more-btn"
+                    onClick={() => document.getElementById('moreImageUpload').click()}
+                >
+                    Upload More Images
+                </button>
+            </div>
 
-                            <div className="modal-footer">
-                                <button className="btn-update" onClick={handleUpdateClick}>UPDATE</button>
-                                <button className="btn-cancel" onClick={closeFacilityModal}>CANCEL</button>
-                            </div>
-                        </div>
-                    </div>
-                )}
+            <div className="modal-footer">
+                <button className="btn-update" onClick={handleUpdateClick}>UPDATE</button>
+                <button className="btn-cancel" onClick={closeFacilityModal}>CANCEL</button>
+            </div>
+        </div>
+    </div>
+)}
+
         </div>
     );
 }
