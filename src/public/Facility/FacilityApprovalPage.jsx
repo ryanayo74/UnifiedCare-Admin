@@ -153,7 +153,7 @@ const FacilityApprovalPage = () => {
             email: user.email,
             phoneNumber: user.phoneNumber,
             address: user.address,
-            atCreated: new Date().toISOString(), // Add the atCreated field with current timestamp
+            createdAt: new Date().toISOString(), // Add the atCreated field with current timestamp
           };
   
           if (userType === 'therapist') {
