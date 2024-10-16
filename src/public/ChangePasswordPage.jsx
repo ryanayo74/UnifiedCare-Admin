@@ -84,7 +84,7 @@ function ChangePasswordPage() {
                 const newUserData = {
                     ...userData,
                     password: newPassword,
-                    timestamp: new Date()
+                    createdAt: new Date()
                 };
                 const newUserFacilityRef = doc(db, "Users", "facility", "userFacility", docSnapshot.id);
                 await setDoc(newUserFacilityRef, newUserData);

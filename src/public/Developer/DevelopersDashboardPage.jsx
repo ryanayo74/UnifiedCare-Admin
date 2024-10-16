@@ -32,6 +32,9 @@ function DevelopersDashboardPage() {
     const [years, setYears] = useState([]);
     const [viewMode, setViewMode] = useState('userData'); // Default to 'userData'
     const [averageSessionData, setAverageSessionData] = useState(new Array(12).fill(0));
+    const [facilityData, setFacilityData] = useState(new Array(12).fill(0)); // Add this state for facility data
+    const [facilityUsers, setFacilityUsers] = useState(0); // Add this to initialize the facility user count
+
 
     useEffect(() => {
         const email = localStorage.getItem('adminEmail');
@@ -135,6 +138,7 @@ function DevelopersDashboardPage() {
         try {
             const therapistSnapshot = await getDocs(collection(db, "Users", "therapists", "newUserTherapist"));
             const parentSnapshot = await getDocs(collection(db, "Users", "parents", "newUserParent"));
+            const facilitySnapshot = await getDocs(collection(db, "Users", "facility", "userFacility"));
 
             const yearSet = new Set();
 
@@ -147,6 +151,14 @@ function DevelopersDashboardPage() {
             });
 
             parentSnapshot.forEach(doc => {
+                const userData = doc.data();
+                if (userData.createdAt) {
+                    const year = userData.createdAt.toDate().getFullYear();
+                    yearSet.add(year);
+                }
+            });
+
+            facilitySnapshot.forEach(doc => {
                 const userData = doc.data();
                 if (userData.createdAt) {
                     const year = userData.createdAt.toDate().getFullYear();
@@ -169,19 +181,18 @@ function DevelopersDashboardPage() {
         try {
             const therapistSnapshot = await getDocs(collection(db, "Users", "therapists", "newUserTherapist"));
             const parentSnapshot = await getDocs(collection(db, "Users", "parents", "newUserParent"));
-
+            const facilitySnapshot = await getDocs(collection(db, "Users", "facility", "userFacility"));
+            const sessionSnapshot = await getDocs(collection(db, "Sessions", "sessionData", "userSessions")); // Example session collection
+    
             const therapistCount = therapistSnapshot.size;
             const parentCount = parentSnapshot.size;
-
-            // Fetch average session durations (replace with your actual logic)
-            const sessionSnapshot = await getDocs(collection(db, "Sessions"));
-            const sessionDataByMonth = new Array(12).fill(0);
-            const sessionCountByMonth = new Array(12).fill(0);
-
+            const facilityCount = facilitySnapshot.size; // Get facility count
+        
             setTherapistUsers(therapistCount);
             setParentUsers(parentCount);
-            setTotalUsers(therapistCount + parentCount);
-
+            setFacilityUsers(facilityCount); // Set facility user count
+            setTotalUsers(therapistCount + parentCount + facilityCount); // Include facility count in total
+    
             const parentCountByMonth = new Array(12).fill(0);
             parentSnapshot.forEach(doc => {
                 const userData = doc.data();
@@ -195,7 +206,7 @@ function DevelopersDashboardPage() {
                     console.warn("Parent Document missing 'createdAt':", doc.id);
                 }
             });
-
+    
             const therapistCountByMonth = new Array(12).fill(0);
             therapistSnapshot.forEach(doc => {
                 const userData = doc.data();
@@ -209,31 +220,50 @@ function DevelopersDashboardPage() {
                     console.warn("Therapist Document missing 'createdAt':", doc.id);
                 }
             });
-
+    
+            const facilityCountByMonth = new Array(12).fill(0);
+            facilitySnapshot.forEach(doc => {
+                const facilityData = doc.data();
+                if (facilityData.createdAt) {
+                    const facilityDate = facilityData.createdAt.toDate();
+                    if (facilityDate.getFullYear() === year) {
+                        const month = facilityDate.getMonth();
+                        facilityCountByMonth[month]++;
+                    }
+                } else {
+                    console.warn("Facility Document missing 'createdAt':", doc.id);
+                }
+            });
+    
+            const sessionDataByMonth = new Array(12).fill(0);
+            const sessionCountByMonth = new Array(12).fill(0);
             sessionSnapshot.forEach(doc => {
                 const sessionData = doc.data();
                 if (sessionData.sessionDuration && sessionData.createdAt) {
                     const sessionDate = sessionData.createdAt.toDate();
                     if (sessionDate.getFullYear() === year) {
                         const month = sessionDate.getMonth();
-                        sessionDataByMonth[month] += sessionData.sessionDuration; // Assuming sessionDuration is in seconds
+                        sessionDataByMonth[month] += sessionData.sessionDuration;
                         sessionCountByMonth[month]++;
                     }
                 }
             });
-
+    
             const avgSessionDurationByMonth = sessionDataByMonth.map((totalDuration, index) =>
-            sessionCountByMonth[index] > 0 ? totalDuration / sessionCountByMonth[index] : 0
+                sessionCountByMonth[index] > 0 ? totalDuration / sessionCountByMonth[index] : 0
             );
-
+    
             setParentData(parentCountByMonth);
             setTherapistData(therapistCountByMonth);
+            setFacilityData(facilityCountByMonth); // Store facility data by month
             setAverageSessionData(avgSessionDurationByMonth);
         } catch (error) {
             console.error("Error fetching user data:", error);
             setError("Failed to fetch user data.");
         }
     };
+    
+    
 
     const handleYearChange = (event) => {
         setSelectedYear(Number(event.target.value));
@@ -249,12 +279,18 @@ function DevelopersDashboardPage() {
                 backgroundColor: 'blue'
             },
             {
-                label: 'Therapist',
+                label: 'Therapists',
                 data: therapistData,
                 backgroundColor: 'red'
+            },
+            {
+                label: 'Facilities',
+                data: facilityData, // Add facility data here
+                backgroundColor: 'green'
             }
         ]
     };
+    
 
     const options = {
         responsive: true,
@@ -368,11 +404,11 @@ function DevelopersDashboardPage() {
                     <Bar data={data} options={options} />
                     </div>
                 )}
-
                 <div className="user-stats">
                     <p>Total users: <span>{totalUsers}</span></p>
                     <p>Therapist users: <span>{therapistUsers}</span></p>
                     <p>Parent users: <span>{parentUsers}</span></p>
+                    <p>Facility users: <span>{facilityUsers}</span></p> {/* New line for Facility users */}
                     <p>Average Session Duration: <span>3m 12s</span></p>
                     <button onClick={() => setViewMode('userData')} className="user-data-btn">User Data</button>    
                     <button onClick={() => setViewMode('avgSession')} className="avg-session-btn">Avg Session</button>
