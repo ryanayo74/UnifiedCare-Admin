@@ -31,9 +31,13 @@ export default function TherapistListPage() {
       setAdminEmail(email);
       fetchFacilityData(email);
     }
-
-    fetchTherapists(); // Fetch therapists when component mounts
   }, []);
+  
+  useEffect(() => {
+    if (currentDocId) {
+      fetchTherapists(); // Fetch therapists only after currentDocId is available
+    }
+  }, [currentDocId]);
 
   const fetchFacilityData = async (email) => {
     try {
@@ -140,16 +144,17 @@ const handleUpdateClick = async () => {
 
 
   const fetchTherapists = async () => {
+    if (!currentDocId) return;
     try {
-      const therapistSnapshot = await getDocs(collection(db, "Users", "therapists", "newUserTherapist"));
+      const therapistSnapshot = await getDocs(collection(db, "Users", "facility", "userFacility", currentDocId, "userTherapist"));
       const fetchedTherapists = [];
       therapistSnapshot.forEach((doc) => {
-        fetchedTherapists.push({ id: doc.id, ...doc.data() }); 
+        fetchedTherapists.push({ id: doc.id, ...doc.data() });
       });
       setTherapists(fetchedTherapists);
     } catch (error) {
       console.error("Error fetching therapist data:", error);
-      setError("Failed to fetch therapist data.");
+      Swal.fire('Error', 'Failed to fetch therapist data.', 'error');
     }
   };
 
@@ -186,7 +191,7 @@ const handleUpdateClick = async () => {
         fullName: `${newTherapist.firstName} ${newTherapist.lastName}`,
       };
   
-      await setDoc(doc(db, "Users", "facility", "userFacility", currentDocId, "pending", docId), therapistWithFullName);
+      await setDoc(doc(db, "Users", "facility", "userFacility", currentDocId, "pendingTherapist", docId), therapistWithFullName);
       
       fetchTherapists(); // Refresh therapist list after adding
       closeAddModal();
@@ -223,9 +228,9 @@ const handleUpdateClick = async () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          // Reference to the therapist document in Firestore
-          const therapistDocRef = doc(db, "Users", "therapists", "newUserTherapist", therapistId);
-  
+          // Reference to the specific therapist document in Firestore
+          const therapistDocRef = doc(db, "Users", "facility", "userFacility", currentDocId, "userTherapist", therapistId);
+          
           // Delete the therapist document
           await deleteDoc(therapistDocRef);
   
@@ -242,6 +247,7 @@ const handleUpdateClick = async () => {
       }
     });
   };
+  
   
   
   

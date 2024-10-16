@@ -53,7 +53,6 @@ function ChangePasswordPage() {
     
             if (response.ok) {
                 console.log('Service posted successfully');
-                alert('Service posted successfully');
             } else {
                 console.error('Failed to post service', response.statusText);
                 alert('Failed to post service: ' + response.statusText);

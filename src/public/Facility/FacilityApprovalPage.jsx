@@ -128,10 +128,17 @@ const FacilityApprovalPage = () => {
   };
 
   
-  const handleApprove = async (facility) => {
+  const handleApprove = async (user) => { 
+    const userType = user.userType; // 'therapist' or 'parent'
+  
+    const confirmationMessage =
+      userType === 'therapist'
+        ? `Are you sure you want to approve ${user.firstName} ${user.lastName} as a therapist?`
+        : `Are you sure you want to approve ${user.firstName} ${user.lastName} as a parent?`;
+  
     Swal.fire({
-      title: 'Approve this therapist?',
-      text: `Are you sure you want to approve ${facility.firstName} ${facility.lastName}?`,
+      title: 'Approve this user?',
+      text: confirmationMessage,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Yes, approve it!',
@@ -139,60 +146,86 @@ const FacilityApprovalPage = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const docId = facility.id; // Facility ID to save to newUserTherapist
-  
-          // Create a therapist object with the facility data
-          const therapistData = {
-            firstName: facility.firstName,
-            lastName: facility.lastName,
-            email: facility.email,
-            phoneNumber: facility.phoneNumber,
-            therapyType: facility.therapyType,
-            specialization: facility.specialization,
-            address: facility.address,
+          const docId = user.id; // The user's ID
+          const approvedData = {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            address: user.address,
+            atCreated: new Date().toISOString(), // Add the atCreated field with current timestamp
           };
   
-          // Save the approved therapist data to the "Users/Therapist/newUserTherapist" collection
-          await setDoc(doc(db, "Users", "therapists", "newUserTherapist", docId), therapistData);
+          if (userType === 'therapist') {
+            approvedData.therapyType = user.therapyType;
+            approvedData.specialization = user.specialization;
+            // Save therapist to the 'userTherapist' collection
+            await setDoc(
+              doc(db, "Users", "facility", "userFacility", user.facilityId, "userTherapist", docId),
+              approvedData
+            );
+          } else if (userType === 'parent') {
+            approvedData.specialNeeds = user.specialNeeds;
+            approvedData.therapyType = user.therapyType;
+            // Save parent to the 'userParent' collection
+            await setDoc(
+              doc(db, "Users", "facility", "userFacility", user.facilityId, "userParent", docId),
+              approvedData
+            );
+          }
   
-          // After saving to newUserTherapist, delete the user from the pending list
-          const pendingDocRef = doc(db, "Users", "facility", "userFacility", facility.facilityId, "pending", facility.id);
-          await deleteDoc(pendingDocRef);
+          // Delete from 'pending' collection
+          await deleteDoc(doc(db, "Users", "facility", "userFacility", user.facilityId, "pendingParent", docId));
+          await deleteDoc(doc(db, "Users", "facility", "userFacility", user.facilityId, "pendingTherapist", docId));
   
-          // Remove the facility from the pendingUsers state
-          setPendingUsers(pendingUsers.filter(user => user.id !== facility.id));
+          // Update state to remove the user from the pending list
+          setPendingUsers(pendingUsers.filter(pendingUser => pendingUser.id !== docId));
   
           Swal.fire({
             title: 'Approved!',
-            text: `${facility.firstName} ${facility.lastName} has been approved.`,
+            text: `${user.firstName} ${user.lastName} has been approved.`,
             icon: 'success',
           });
         } catch (error) {
           Swal.fire({
             title: 'Error!',
-            text: 'Failed to approve the facility. Please try again.',
+            text: 'Failed to approve the user. Please try again.',
             icon: 'error',
           });
-          console.error("Error approving facility:", error);
+          console.error("Error approving user:", error);
         }
       }
     });
-  };
-  
+  };  
 
   const fetchPendingUsers = async () => {
     try {
       const facilitySnapshot = await getDocs(collection(db, "Users", "facility", "userFacility"));
-      
+  
       const pendingUsersPromises = facilitySnapshot.docs.map(async (facilityDoc) => {
-        const pendingUsersCollection = collection(db, "Users", "facility", "userFacility", facilityDoc.id, "pending");
-        const pendingUsersSnapshot = await getDocs(pendingUsersCollection);
-        
-        return pendingUsersSnapshot.docs.map(doc => ({
+        const pendingTherapistsCollection = collection(db, "Users", "facility", "userFacility", facilityDoc.id, "pendingTherapist");
+        const pendingParentsCollection = collection(db, "Users", "facility", "userFacility", facilityDoc.id, "pendingParent");
+  
+        const [pendingTherapistsSnapshot, pendingParentsSnapshot] = await Promise.all([
+          getDocs(pendingTherapistsCollection),
+          getDocs(pendingParentsCollection),
+        ]);
+  
+        const pendingTherapists = pendingTherapistsSnapshot.docs.map(doc => ({
           id: doc.id,
           facilityId: facilityDoc.id,
+          userType: 'therapist',
           ...doc.data(),
         }));
+  
+        const pendingParents = pendingParentsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          facilityId: facilityDoc.id,
+          userType: 'parent',
+          ...doc.data(),
+        }));
+  
+        return [...pendingTherapists, ...pendingParents]; // Combine both into a single array
       });
   
       const pendingUsersArray = await Promise.all(pendingUsersPromises);
@@ -203,35 +236,38 @@ const FacilityApprovalPage = () => {
       setError("Failed to fetch pending users.");
     }
   };
+  
 
 
-  const handleReject = async (facility) => {
+  const handleReject = async (user) => {
+    const userType = user.userType; // 'therapist' or 'parent'
+  
     Swal.fire({
       title: 'Are you sure?',
-      text: "This action will reject and delete the therapist.",
+      text: `This action will reject and delete the ${userType}.`,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Yes, reject it!',
-      cancelButtonText: 'No, keep it'
+      cancelButtonText: 'No, keep it',
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          // Use facility.id (the therapist's ID) instead of therapistId
-          await deleteDoc(doc(db, "Users", "facility", "userFacility", facility.facilityId, "pending", facility.id));
-          
-          // Optionally: Remove the rejected therapist from the pendingUsers state
-          setPendingUsers(pendingUsers.filter(user => user.id !== facility.id));
+          // Delete the user from the 'pending' collection
+          await deleteDoc(doc(db, "Users", "facility", "userFacility", user.facilityId, "pending", user.id));
+  
+          // Optionally: Remove the rejected user from the pendingUsers state
+          setPendingUsers(pendingUsers.filter(pendingUser => pendingUser.id !== user.id));
   
           Swal.fire({
             icon: 'success',
-            title: 'Therapist Rejected',
-            text: 'The therapist has been successfully rejected and removed.',
-            confirmButtonText: 'Okay'
+            title: `${userType.charAt(0).toUpperCase() + userType.slice(1)} Rejected`,
+            text: `The ${userType} has been successfully rejected and removed.`,
+            confirmButtonText: 'Okay',
           });
         } catch (error) {
           Swal.fire({
             title: 'Error!',
-            text: 'Failed to reject and delete the therapist. Please try again.',
+            text: `Failed to reject and delete the ${userType}. Please try again.`,
             icon: 'error',
           });
           console.error(error);
@@ -239,12 +275,13 @@ const FacilityApprovalPage = () => {
       } else {
         Swal.fire({
           title: 'Cancelled',
-          text: 'The therapist was not rejected.',
+          text: `The ${userType} was not rejected.`,
           icon: 'info',
         });
       }
     });
   };
+  
   
   
   
@@ -276,52 +313,88 @@ const FacilityApprovalPage = () => {
       </aside>
 
       <main className="main-content">
-      <div className="facility-info" onClick={handleFacilityImageClick} style={{ cursor: 'pointer' }}>
-          <img
-            src={facilityImage}
-            alt="Facility"
-            className="facility-img"
-            onError={() => setFacilityImage('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png')}
-          />
-          <span>{facilityName}</span>
-          {error && <p className="error">{error}</p>}
-         </div>
+  <div className="facility-info" onClick={handleFacilityImageClick} style={{ cursor: 'pointer' }}>
+    <img
+      src={facilityImage}
+      alt="Facility"
+      className="facility-img"
+      onError={() => setFacilityImage('https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png')}
+    />
+    <span>{facilityName}</span>
+    {error && <p className="error">{error}</p>}
+  </div>
 
-         <div className="header">
-          <h2>Pending List</h2>
-          {error && <p className="error">{error}</p>}
-          <div className="actions">
-          </div>
-       </div>
+  <div className="header">
+    <h2>Pending Therapists</h2>
+    {error && <p className="error">{error}</p>}
+  </div>
 
-       <table className="pending-list-table">
-            <thead>
-              <tr>
-                <th>Therapist Name</th>
-                <th>Email</th>
-                <th>Phone Number</th>
-                <th>Qualification</th>
-                <th>Details</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pendingUsers.map((user, index) => (
-                <tr key={index}>
-                  <td>{user.fullName}</td>
-                  <td>{user.email}</td>
-                  <td>{user.phoneNumber}</td>
-                  <td>
-                    <button className="approve-btn" onClick={() => handleApprove(user)}>✅</button>
-                    <button className="reject-btn" onClick={() => handleReject(user.id)}>❌</button>
-                  </td>
-                  <td>
-                    <a href="#" className="view-link" onClick={() => handleViewDetails(user)}>View</a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-      </main>
+  <table className="pending-list-table">
+    <thead>
+      <tr>
+        <th>Therapist Name</th>
+        <th>Email</th>
+        <th>Phone Number</th>
+        <th>Details</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {pendingUsers
+        .filter(user => user.userType === 'therapist')
+        .map((user, index) => (
+          <tr key={index}>
+            <td>{user.fullName}</td>
+            <td>{user.email}</td>
+            <td>{user.phoneNumber}</td>
+            <td>
+              <a href="#" className="view-link" onClick={() => handleViewDetails(user)}>View</a>
+            </td>
+            <td>
+              <button className="approve-btn" onClick={() => handleApprove(user)}>✅</button>
+              <button className="reject-btn" onClick={() => handleReject(user)}>❌</button>
+            </td>
+          </tr>
+      ))}
+    </tbody>
+  </table>
+
+  <div className="header">
+    <h2>Pending Parents</h2>
+    {error && <p className="error">{error}</p>}
+  </div>
+
+  <table className="pending-list-table">
+    <thead>
+      <tr>
+        <th>Parent Name</th>
+        <th>Email</th>
+        <th>Phone Number</th>
+        <th>Details</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {pendingUsers
+        .filter(user => user.userType === 'parent')
+        .map((user, index) => (
+          <tr key={index}>
+            <td>{user.fullName}</td>
+            <td>{user.email}</td>
+            <td>{user.phoneNumber}</td>
+            <td>
+              <a href="#" className="view-link" onClick={() => handleViewDetails(user)}>View</a>
+            </td>
+            <td>
+              <button className="approve-btn" onClick={() => handleApprove(user)}>✅</button>
+              <button className="reject-btn" onClick={() => handleReject(user)}>❌</button>
+            </td>
+          </tr>
+      ))}
+    </tbody>
+  </table>
+</main>
+
       
            {/* Modal for facility image and details */}
            {isFacilityModalOpen && (

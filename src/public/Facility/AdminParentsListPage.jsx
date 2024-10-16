@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
+import { collection, getDocs, updateDoc, doc, setDoc, deleteDoc} from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
 import loginImage from '../../assets/unifiedcarelogo.png';
 import Swal from 'sweetalert2';
 import '../../css/AdminParentsListPage.css';
 
-export default function AdminParentsListPage() {
+export function AdminParentsListPage() {
   const navigate = useNavigate();
   const [adminEmail, setAdminEmail] = useState('');
   const [facilityName, setFacilityName] = useState('Facility');
@@ -21,6 +21,8 @@ export default function AdminParentsListPage() {
   const [selectedImageFile, setSelectedImageFile] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false); // For parent modal
   const [isFacilityModalOpen, setIsFacilityModalOpen] = useState(false); // For facility modal
+  const [newParents, setNewParents] = useState({});
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   useEffect(() => {
     const email = localStorage.getItem('adminEmail');
@@ -28,8 +30,13 @@ export default function AdminParentsListPage() {
       setAdminEmail(email);
       fetchFacilityData(email);
     }
-    fetchParents();
   }, []);
+  
+  useEffect(() => {
+    if (currentDocId) {
+      fetchParents(); // Fetch parents only after currentDocId is available
+    }
+  }, [currentDocId]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -137,7 +144,7 @@ const closeFacilityModal = () => {
 
   const fetchParents = async () => {
     try {
-      const parentsSnapshot = await getDocs(collection(db, "Users", "parents", "newUserParent"));
+      const parentsSnapshot = await getDocs(collection(db, "Users", "facility", "userFacility", currentDocId, "userParent"));
       const fetchedParents = [];
       parentsSnapshot.forEach((doc) => {
         fetchedParents.push({ id: doc.id, ...doc.data() });
@@ -147,6 +154,95 @@ const closeFacilityModal = () => {
       console.error("Error fetching parents data:", error);
       setError("Failed to fetch parents data.");
     }
+  };
+
+  const handleAddClick = () => {
+    setNewParents({
+      firstName: '',
+      lastName: '',
+      email: '',
+      phoneNumber: '',
+      therapyType: '',
+      specialNeeds: '',
+      address: ''
+    });
+    setIsAddModalOpen(true);
+  };
+
+  const closeAddModal = () => {
+    setIsAddModalOpen(false);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewParents((prev) => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleAddParent = async () => {
+    try {
+      const docId = `${newParents.firstName}_${newParents.lastName}`;
+      const parentWithFullName = {
+        ...newParents,
+        fullName: `${newParents.firstName} ${newParents.lastName}`,
+      };
+  
+      await setDoc(doc(db, "Users", "facility", "userFacility", currentDocId, "pendingParent", docId), parentWithFullName);
+      
+      fetchParents(); 
+      closeAddModal();
+  
+      // Success SweetAlert
+      Swal.fire({
+        icon: 'success',
+        title: 'Parent Added!',
+        text: `${parentWithFullName.fullName} has been successfully added.`,
+        confirmButtonText: 'Okay'
+      });
+    } catch (error) {
+      console.error("Error adding parent:", error);
+      
+      // Error SweetAlert
+      Swal.fire({
+        icon: 'error',
+        title: 'Add Failed',
+        text: 'There was an error adding the parent. Please try again.',
+        confirmButtonText: 'Try Again'
+      });
+    }
+  };
+
+  const handleDeleteParent = async (parentId) => {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "This action will permanently delete the parent.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'No, keep it'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          // Reference to the parents document in Firestore
+          const parentDocRef = doc(db, "Users", "facility", "userFacility", currentDocId, "userParent", parentId);
+  
+          // Delete the parents document
+          await deleteDoc(parentDocRef);
+  
+          // Update the parents state to remove the deleted parents
+          setParents(parents.filter(parentId => parentId.id !== parentId));
+  
+          // Show success message
+          Swal.fire('Deleted!', 'The parent has been deleted.', 'success');
+          setIsModalOpen(false); // Close the modal after deletion
+        } catch (error) {
+          console.error("Error deleting parent:", error);
+          Swal.fire('Error', 'Failed to delete the parent. Please try again.', 'error');
+        }
+      }
+    });
   };
 
   const handleViewClick = (parent) => {
@@ -199,7 +295,7 @@ const closeFacilityModal = () => {
         <div className="header">
           <h2>Parents List</h2>
           <div className="actions">
-            <button className="btn-add">ADD</button>
+          <button className="btn-add" onClick={handleAddClick}>ADD</button>
           </div>
         </div>
         <table className="therapist-table">
@@ -214,16 +310,16 @@ const closeFacilityModal = () => {
           </thead>
           <tbody>
             {parents.map((parent, index) => (
-              <tr key={index}>
-                <td>{parent.parentDetails.firstName} {parent.parentDetails.lastName}</td>
-                <td>{parent.parentDetails?.email}</td>
-                <td>{parent.parentDetails?.phone}</td>
-                <td>{parent.childDetails?.therapyType}</td>
-                <td><button onClick={() => handleViewClick(parent)}>View</button></td>
-              </tr>
+            <tr key={index}>
+            <td>{parent.firstName + ' ' + parent.lastName}</td> {/* Corrected line */}
+            <td>{parent.email}</td>
+            <td>{parent.phoneNumber}</td>
+            <td>{parent.therapyType}</td>
+            <td><button onClick={() => handleViewClick(parent)}>View</button></td>
+            </tr>
             ))}
           </tbody>
-        </table>
+      </table>
       </main>
 
       {isModalOpen && selectedParent && (
@@ -233,7 +329,7 @@ const closeFacilityModal = () => {
       
       <div className="modal-header">
         <img
-          src="https://d1nhio0ox7pgb.cloudfront.net/_img/v_collection_png/512x512/shadow/user_add.png"
+          src={selectedParent.imageUrl}
           alt="Parent Avatar"
           className="parent-img"
         />
@@ -242,43 +338,41 @@ const closeFacilityModal = () => {
       <div className="modal-body">
         <div className="modal-info-group">
           <label>Parent Name</label>
-          <p>{selectedParent.parentDetails.firstName} {selectedParent.parentDetails.lastName}</p>
+          <p>{selectedParent.firstName} {selectedParent.lastName}</p>
         </div>
         
         <div className="modal-info-group">
           <label>Email</label>
-          <p>{selectedParent.parentDetails.email}</p>
+          <p>{selectedParent.email}</p>
         </div>
         
         <div className="modal-info-group">
           <label>Phone Number</label>
-          <p>{selectedParent.parentDetails.phone}</p>
+          <p>{selectedParent.phoneNumber}</p>
         </div>
 
         <div className="modal-info-group">
           <label>Therapy Type</label>
-          <p>{selectedParent.childDetails.therapyType}</p>
+          <p>{selectedParent.therapyType}</p>
         </div>
 
         <div className="modal-info-group">
           <label>Address</label>
-          <p>{selectedParent.childDetails.address}</p>
+          <p>{selectedParent.address}</p>
         </div>
 
         <div className="modal-info-group">
-          <label>Specialization</label>
-          <p>{selectedParent.childDetails.specialization || "N/A"}</p>
+          <label>Special Needs</label>
+          <p>{selectedParent.specialNeeds || "N/A"}</p>
         </div>
       </div>
-
       <div className="modal-footer">
         <button className="btn-update">UPDATE</button>
-        <button className="btn-delete">DELETE</button>
+        <button className="btn-delete" onClick={() => handleDeleteParent(selectedParent.id)}>DELETE</button>
       </div>
     </div>
   </div>
 )}
-
 
          {/* Modal for facility image and details */}
          {isFacilityModalOpen && (
@@ -335,7 +429,113 @@ const closeFacilityModal = () => {
                         </div>
                     </div>
                 )}
+
+           {/* Add Parent Modal */}
+      {isAddModalOpen && (
+        <div className="modal">
+          <div className="modal-content">
+            <button className="modal-close" onClick={closeAddModal}>X</button>
+            <div className="modal-header">
+              <h3>Add New Parent</h3>
+            </div>
+
+            <div className="modal-body">
+              <div className="modal-info-group">
+                <label>First Name</label>
+                <input 
+                  type="text" 
+                  name="firstName" 
+                  value={newParents.firstName} 
+                  onChange={handleInputChange} 
+                />
+              </div>
+
+              <div className="modal-info-group">
+                <label>Last Name</label>
+                <input 
+                  type="text" 
+                  name="lastName" 
+                  value={newParents.lastName} 
+                  onChange={handleInputChange} 
+                />
+              </div>
+
+              <div className="modal-info-group">
+                <label>Email</label>
+                <input 
+                  type="email" 
+                  name="email" 
+                  value={newParents.email} 
+                  onChange={handleInputChange} 
+                />
+              </div>
+
+              <div className="modal-info-group">
+                <label>Phone Number</label>
+                <input 
+                  type="text" 
+                  name="phoneNumber" 
+                  value={newParents.phoneNumber} 
+                  onChange={handleInputChange} 
+                />
+              </div>
+
+              <div className="modal-info-group">
+                <label>Therapy Type</label>
+                <input 
+                  type="text" 
+                  name="therapyType" 
+                  value={newParents.therapyType} 
+                  onChange={handleInputChange} 
+                />
+              </div>
+
+              <div className="modal-info-group">
+                <label>Special Needs</label>
+                <input 
+                  type="text" 
+                  name="specialNeeds" 
+                  value={newParents.specialNeeds} 
+                  onChange={handleInputChange} 
+                />
+              </div>
+
+              <div className="modal-info-group">
+                <label>Address</label>
+                <input 
+                  type="text" 
+                  name="address" 
+                  value={newParents.address} 
+                  onChange={handleInputChange} 
+                />
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn-add" onClick={handleAddParent}>ADD</button>
+              <button className="btn-cancel" onClick={closeAddModal}>CANCEL</button>
+            </div>
+          </div>
         </div>
-    );
+      )}
+    </div>
+  );
 }
- 
+
+export default AdminParentsListPage;
+
+
+
+{/* BACK UP FOR THE API USE
+          <tbody>
+            {parents.map((parent, index) => (
+              <tr key={index}>
+                <td>{parent.parentDetails.firstName} {parent.parentDetails.lastName}</td>
+                <td>{parent.parentDetails?.email}</td>
+                <td>{parent.parentDetails?.phone}</td>
+                <td>{parent.childDetails?.therapyType}</td>
+                <td><button onClick={() => handleViewClick(parent)}>View</button></td>
+              </tr>
+            ))}
+          </tbody>
+*/}

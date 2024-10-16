@@ -180,18 +180,13 @@ const handleDeleteFacility = async () => {
       // Step 2: Delete the main facility document after subcollection is deleted
       await deleteDoc(docRef);
 
-      // Step 3: Call the Cloud Function to delete the user's Firebase Authentication account
-      const functions = getFunctions();
-      const deleteAuthUser = httpsCallable(functions, 'deleteFacilityAuthUser');
-      await deleteAuthUser({ email: selectedFacility.email });
-
       // Step 4: Refresh facility list after deletion
       fetchFacility();
 
       // Show success message using SweetAlert
       Swal.fire(
         'Deleted!',
-        'Facility and associated authentication account deleted successfully!',
+        'Facility deleted successfully!',
         'success'
       );
     } catch (error) {
