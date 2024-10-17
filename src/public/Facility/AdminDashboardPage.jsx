@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, updateDoc, doc, setDoc } from "firebase/firestore";
+import { collection, getDocs, updateDoc, doc, setDoc, getDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
 import { Bar } from 'react-chartjs-2';
@@ -131,7 +131,6 @@ function AdminDashboardPage() {
                 const docRef = doc(db, "Users", "facility", "userFacility", currentDocId);
                 await updateDoc(docRef, updatedData);
     
-                // Update the clinic service in Firestore (optional, depending on your structure)
                 const clinicServicesRef = doc(db, "Users", "facility", "userFacility", currentDocId, "clinic_services", currentDocId);
                 await setDoc(clinicServicesRef, {
                     name: facilityName,
@@ -171,36 +170,49 @@ function AdminDashboardPage() {
             });
         }
     };
-
-    //need to fix updating API
+    
     const postClinicServiceToAPI = async (serviceData) => {
         try {
-            const response = await fetch(`http://capstone_ai.codehit.net/clinic_services/103`, {
-                method: 'PUT',  // Use PUT to update the data
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    "clinic_id": serviceData.clinic_id,
-                    "department": serviceData.department,
-                    "description": serviceData.description,
-                    "name": serviceData.name
-                })
-            });
+            // Step 1: Get the document reference for the clinic service
+            const clinicServiceDocRef = doc(db, "Users", "facility", "userFacility", currentDocId, "clinic_services", currentDocId); 
+            const clinicServiceDoc = await getDoc(clinicServiceDocRef);
     
-            if (response.ok) {
-                console.log('Service updated successfully');
-                alert('Service updated successfully');
+            if (clinicServiceDoc.exists()) {
+                const clinic_id = clinicServiceDoc.data().clinic_id;  // Retrieve the clinic_id from the document
+                
+                // Step 2: Proceed with the API call using the fetched clinic_id
+                const response = await fetch(`/api/clinic_services/${clinic_id}`, {
+                    method: 'POST',  // Use 'PUT' if updating an existing service
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        clinic_id: clinic_id,
+                        name: serviceData.name,
+                        description: serviceData.description,
+                    }),
+                });
+    
+                if (response.ok) {
+                    console.log('Service updated successfully');
+                    alert('Service updated successfully');
+                } else {
+                    console.error('Failed to update service:', response.statusText);
+                    alert('Failed to update service: ' + response.statusText);
+                }
             } else {
-                console.error('Failed to update service', response.statusText);
-                alert('Failed to update service: ' + response.statusText);
+                console.error('No such document exists!');
+                alert('No clinic service found.');
             }
         } catch (error) {
-            console.error('Error updating clinic service:', error);
-            alert('Error updating clinic service: ' + error.message);
+            console.error('Error fetching clinic_id or updating clinic service:', error);
+            alert('Error: ' + error.message);
         }
     };
-
+    
+    
+    
+    
     const handleAddressClick = () => {
         setShowMap(true);
       };
@@ -601,42 +613,40 @@ function AdminDashboardPage() {
 
             {/* Conditional Rendering for Modal Pages */}
             {modalPage === 1 ? renderModalContent() : (
-                <div className="modal-body">
-                    <p>This is the second page. You can add more content here if needed.</p>
+                <div className="modal-body">                 
+                    {/* Display uploaded images - Only on Page 2 */}
+                    <div className="uploaded-images-preview">
+                        {uploadedImages.map((image, index) => (
+                            image && (
+                                <img
+                                    key={index}
+                                    src={image}
+                                    alt={`Uploaded Image ${index + 1}`}
+                                    className="uploaded-image-preview"
+                                />
+                            )
+                        ))}
+                    </div>
+
+                    {/* Single Upload Button for More Images - Only on Page 2 */}
+                    <div className="upload-more-images">
+                        <input
+                            type="file"
+                            id="moreImageUpload"
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            multiple
+                            onChange={handleMoreImagesUpload}
+                        />
+                        <button
+                            className="upload-more-btn"
+                            onClick={() => document.getElementById('moreImageUpload').click()}
+                        >
+                            Upload More Images
+                        </button>
+                    </div>
                 </div>
             )}
-
-            {/* Display uploaded images */}
-            <div className="uploaded-images-preview">
-                {uploadedImages.map((image, index) => (
-                    image && (
-                        <img
-                            key={index}
-                            src={image}
-                            alt={`Uploaded Image ${index + 1}`}
-                            className="uploaded-image-preview"
-                        />
-                    )
-                ))}
-            </div>
-
-            {/* Single Upload Button for More Images */}
-            <div className="upload-more-images">
-                <input
-                    type="file"
-                    id="moreImageUpload"
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    multiple
-                    onChange={handleMoreImagesUpload}
-                />
-                <button
-                    className="upload-more-btn"
-                    onClick={() => document.getElementById('moreImageUpload').click()}
-                >
-                    Upload More Images
-                </button>
-            </div>
 
             <div className="modal-footer">
                 <button className="btn-update" onClick={handleUpdateClick}>UPDATE</button>
@@ -645,7 +655,6 @@ function AdminDashboardPage() {
         </div>
     </div>
 )}
-
         </div>
     );
 }
