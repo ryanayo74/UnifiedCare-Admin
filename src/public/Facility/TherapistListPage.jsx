@@ -185,7 +185,9 @@ const handleUpdateClick = async () => {
 
   const handleAddTherapist = async () => {
     try {
-      const docId = `${newTherapist.firstName}_${newTherapist.lastName}`;
+      // Replace dots or other special characters in the email to form a valid document ID
+      const docId = newTherapist.email.replace(/\./g, '_'); // Replace periods with underscores for Firestore compatibility
+  
       const therapistWithFullName = {
         ...newTherapist,
         fullName: `${newTherapist.firstName} ${newTherapist.lastName}`,
@@ -215,6 +217,7 @@ const handleUpdateClick = async () => {
       });
     }
   };
+  
   
 
   const handleDeleteTherapist = async (therapistId) => {

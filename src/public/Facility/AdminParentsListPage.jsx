@@ -183,7 +183,9 @@ const closeFacilityModal = () => {
 
   const handleAddParent = async () => {
     try {
-      const docId = `${newParents.firstName}_${newParents.lastName}`;
+      // Replace dots or other special characters in the email to form a valid document ID
+      const docId = newParents.email.replace(/\./g, '_'); // Replace periods with underscores for Firestore compatibility
+  
       const parentWithFullName = {
         ...newParents,
         fullName: `${newParents.firstName} ${newParents.lastName}`,
@@ -191,7 +193,7 @@ const closeFacilityModal = () => {
   
       await setDoc(doc(db, "Users", "facility", "userFacility", currentDocId, "pendingParent", docId), parentWithFullName);
       
-      fetchParents(); 
+      fetchParents(); // Refresh parent list after adding
       closeAddModal();
   
       // Success SweetAlert
@@ -213,6 +215,7 @@ const closeFacilityModal = () => {
       });
     }
   };
+  
 
   const handleDeleteParent = async (parentId) => {
     Swal.fire({

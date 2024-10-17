@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, doc, updateDoc, deleteDoc,setDoc } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, deleteDoc,setDoc, Timestamp  } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage, auth } from '../../config/firebase'; // Group Firebase imports
 import loginImage from '../../assets/unifiedcarelogo.png';
@@ -128,7 +128,7 @@ const FacilityApprovalPage = () => {
   };
 
   
-  const handleApprove = async (user) => { 
+  const handleApprove = async (user) => {
     const userType = user.userType; // 'therapist' or 'parent'
   
     const confirmationMessage =
@@ -153,7 +153,7 @@ const FacilityApprovalPage = () => {
             email: user.email,
             phoneNumber: user.phoneNumber,
             address: user.address,
-            createdAt: new Date().toISOString(), // Add the atCreated field with current timestamp
+            createdAt: Timestamp.now(), // Use Firebase's Timestamp for current time
           };
   
           if (userType === 'therapist') {

@@ -262,8 +262,6 @@ function DevelopersDashboardPage() {
             setError("Failed to fetch user data.");
         }
     };
-    
-    
 
     const handleYearChange = (event) => {
         setSelectedYear(Number(event.target.value));

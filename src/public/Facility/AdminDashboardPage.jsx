@@ -28,32 +28,46 @@ function AdminDashboardPage() {
     const [totalUsers, setTotalUsers] = useState(0);
     const [therapistUsers, setTherapistUsers] = useState(0);
     const [parentUsers, setParentUsers] = useState(0);
-    const [parentData, setParentData] = useState(new Array(12).fill(0));
-    const [therapistData, setTherapistData] = useState(new Array(12).fill(0));
+    const [parentData, setParentData] = useState([]);
+    const [therapistData, setTherapistData] = useState([]);
+    const [averageSessionData, setAverageSessionData] = useState([]);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [years, setYears] = useState([]);
     const [viewMode, setViewMode] = useState('userData');
-    const [averageSessionData, setAverageSessionData] = useState(new Array(12).fill(0));
     const [additionalImages, setAdditionalImages] = useState(Array(5).fill(null));
     const [uploadedImages, setUploadedImages] = useState(Array(5).fill(null)); // To hold URLs of uploaded images
     const [modalPage, setModalPage] = useState(1);  // Page navigation in the modal
     const [showMap, setShowMap] = useState(false);
-   
 
     useEffect(() => {
         const email = localStorage.getItem('adminEmail');
-        if (email) {
+        const storedDocId = localStorage.getItem('currentDocId');
+        if (email && storedDocId) {
             setAdminEmail(email);
-            fetchFacilityData(email);
+            setCurrentDocId(storedDocId);  // Use stored doc ID if available
+            fetchFacilityData(email).then(() => {
+                fetchYears();  // Fetch years after facility data is loaded
+            });
+        } else if (email) {
+            setAdminEmail(email);
+            fetchFacilityData(email).then(() => {
+                fetchYears();  // Fetch years after facility data is loaded
+            });
         }
-        fetchYears(); // Fetch the years when users were created
     }, []);
-
+    
     useEffect(() => {
         if (years.length > 0) {
             fetchUserData(selectedYear); // Fetch data for the selected year
         }
     }, [selectedYear, years]);
+    
+    useEffect(() => {
+        if (currentDocId) {
+            fetchYears();  // Fetch the years when users were created
+        }
+    }, [currentDocId]);
+    
 
     const fetchFacilityData = async (email) => {
         try {
@@ -68,10 +82,10 @@ function AdminDashboardPage() {
                     setFacilityAddress(data.address || 'Set your facility address.');
                     setTherapyService(data.therapyService || '');
                     setCurrentDocId(doc.id);
+                    localStorage.setItem('currentDocId', doc.id);  // Store the doc ID in localStorage
                     found = true;
                 }
             });
-
             if (!found) {
                 console.error("No document found with this email.");
                 setError("No document found with this email.");
@@ -81,6 +95,7 @@ function AdminDashboardPage() {
             setError("Failed to fetch facility data.");
         }
     };
+    
 
     const handleUpdateClick = async () => {
         try {
@@ -215,28 +230,71 @@ function AdminDashboardPage() {
     
 
     const fetchYears = async () => {
+        if (!currentDocId) {
+            return;
+        }
+    
         try {
-            const therapistSnapshot = await getDocs(collection(db, "Users", "therapists", "newUserTherapist"));
-            const parentSnapshot = await getDocs(collection(db, "Users", "parents", "newUserParent"));
-
+            const therapistSnapshot = await getDocs(collection(db, "Users", "facility", "userFacility", currentDocId, "userTherapist"));
+            const parentSnapshot = await getDocs(collection(db, "Users", "facility", "userFacility", currentDocId, "userParent"));
+    
             const yearSet = new Set();
-
+    
+            // Handle therapist documents
             therapistSnapshot.forEach(doc => {
                 const userData = doc.data();
+                
                 if (userData.createdAt) {
-                    const year = userData.createdAt.toDate().getFullYear();
-                    yearSet.add(year);
+                    // Check if createdAt is a Firestore Timestamp
+                    if (userData.createdAt.toDate) {
+                        const year = userData.createdAt.toDate().getFullYear();
+                        yearSet.add(year);
+                    }
+                    // Check if createdAt is a JavaScript Date object
+                    else if (userData.createdAt instanceof Date) {
+                        const year = userData.createdAt.getFullYear();
+                        yearSet.add(year);
+                    }
+                    // Check if createdAt is a string and try to parse it as a Date
+                    else if (typeof userData.createdAt === 'string') {
+                        const date = new Date(userData.createdAt);
+                        if (!isNaN(date.getTime())) {
+                            const year = date.getFullYear();
+                            yearSet.add(year);
+                        } else {
+                            console.warn(`Invalid date string for document ${doc.id}: ${userData.createdAt}`);
+                        }
+                    } else {
+                        console.warn(`Unsupported createdAt format for document ${doc.id}:`, userData.createdAt);
+                    }
                 }
             });
-
+    
+            // Handle parent documents
             parentSnapshot.forEach(doc => {
                 const userData = doc.data();
+                
                 if (userData.createdAt) {
-                    const year = userData.createdAt.toDate().getFullYear();
-                    yearSet.add(year);
+                    if (userData.createdAt.toDate) {
+                        const year = userData.createdAt.toDate().getFullYear();
+                        yearSet.add(year);
+                    } else if (userData.createdAt instanceof Date) {
+                        const year = userData.createdAt.getFullYear();
+                        yearSet.add(year);
+                    } else if (typeof userData.createdAt === 'string') {
+                        const date = new Date(userData.createdAt);
+                        if (!isNaN(date.getTime())) {
+                            const year = date.getFullYear();
+                            yearSet.add(year);
+                        } else {
+                            console.warn(`Invalid date string for document ${doc.id}: ${userData.createdAt}`);
+                        }
+                    } else {
+                        console.warn(`Unsupported createdAt format for document ${doc.id}:`, userData.createdAt);
+                    }
                 }
             });
-
+    
             const yearArray = Array.from(yearSet).sort((a, b) => a - b);
             setYears(yearArray);
             if (!yearArray.includes(selectedYear)) {
@@ -249,49 +307,55 @@ function AdminDashboardPage() {
     };
 
     const fetchUserData = async (year) => {
+        if (!year) {
+            console.error("Year is not defined.");
+            setError("Year is not defined.");
+            return;
+        }
+    
         try {
-            const therapistSnapshot = await getDocs(collection(db, "Users", "therapists", "newUserTherapist"));
-            const parentSnapshot = await getDocs(collection(db, "Users", "parents", "newUserParent"));
-
+            const therapistSnapshot = await getDocs(collection(db, "Users", "facility", "userFacility", currentDocId, "userTherapist"));
+            const parentSnapshot = await getDocs(collection(db, "Users", "facility", "userFacility", currentDocId, "userParent"));
+    
             const therapistCount = therapistSnapshot.size;
             const parentCount = parentSnapshot.size;
-
+    
             const sessionSnapshot = await getDocs(collection(db, "Sessions"));
             const sessionDataByMonth = new Array(12).fill(0);
             const sessionCountByMonth = new Array(12).fill(0);
-
+    
             setTherapistUsers(therapistCount);
             setParentUsers(parentCount);
             setTotalUsers(therapistCount + parentCount);
-
+    
             const parentCountByMonth = new Array(12).fill(0);
             parentSnapshot.forEach(doc => {
                 const userData = doc.data();
                 if (userData.createdAt) {
-                    const userDate = userData.createdAt.toDate();
-                    if (userDate.getFullYear() === year) {
-                        const month = userDate.getMonth();
+                    const createdAtDate = userData.createdAt.toDate();
+                    if (createdAtDate.getFullYear() === year) {
+                        const month = createdAtDate.getMonth();
                         parentCountByMonth[month]++;
                     }
                 } else {
-                    console.warn("Parent Document missing 'createdAt':", doc.id);
+                    console.warn(`Parent document ${doc.id} is missing 'createdAt'.`);
                 }
             });
-
+    
             const therapistCountByMonth = new Array(12).fill(0);
             therapistSnapshot.forEach(doc => {
                 const userData = doc.data();
                 if (userData.createdAt) {
-                    const userDate = userData.createdAt.toDate();
-                    if (userDate.getFullYear() === year) {
-                        const month = userDate.getMonth();
+                    const createdAtDate = userData.createdAt.toDate();
+                    if (createdAtDate.getFullYear() === year) {
+                        const month = createdAtDate.getMonth();
                         therapistCountByMonth[month]++;
                     }
                 } else {
-                    console.warn("Therapist Document missing 'createdAt':", doc.id);
+                    console.warn(`Therapist document ${doc.id} is missing 'createdAt'.`);
                 }
             });
-
+    
             sessionSnapshot.forEach(doc => {
                 const sessionData = doc.data();
                 if (sessionData.sessionDuration && sessionData.createdAt) {
@@ -303,11 +367,11 @@ function AdminDashboardPage() {
                     }
                 }
             });
-
+    
             const avgSessionDurationByMonth = sessionDataByMonth.map((totalDuration, index) =>
                 sessionCountByMonth[index] > 0 ? totalDuration / sessionCountByMonth[index] : 0
             );
-
+    
             setParentData(parentCountByMonth);
             setTherapistData(therapistCountByMonth);
             setAverageSessionData(avgSessionDurationByMonth);
@@ -316,11 +380,14 @@ function AdminDashboardPage() {
             setError("Failed to fetch user data.");
         }
     };
-
+    
+    
     const handleYearChange = (event) => {
-        setSelectedYear(Number(event.target.value));
+        const selectedYear = Number(event.target.value);
+        setSelectedYear(selectedYear);
+        fetchUserData(selectedYear); // Call fetchUserData with the updated year
     };
-
+    
     const data = {
         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
         datasets: [
@@ -336,7 +403,7 @@ function AdminDashboardPage() {
             }
         ]
     };
-
+    
     const options = {
         responsive: true,
         plugins: {
