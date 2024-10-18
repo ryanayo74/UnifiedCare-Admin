@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, updateDoc, doc, setDoc} from "firebase/firestore";
+import { collection, getDocs, updateDoc, doc, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
 import Swal from 'sweetalert2'; 
 import loginImage from '../../assets/unifiedcarelogo.png';
-import '../../css/DeveloperCss/DevelopersAnnouncementPage.css'; // You can create this file for styling
+import '../../css/DeveloperCss/DevelopersAnnouncementPage.css';
 
 function DevelopersAnnouncementsPage() {
     const navigate = useNavigate();
@@ -15,26 +15,24 @@ function DevelopersAnnouncementsPage() {
     const [profileImage, setProfileImage] = useState('/path-to-default-profile.jpg');
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [newProfileImage, setNewProfileImage] = useState(null);
-
     const [error, setError] = useState(null);
     const [currentDocId, setCurrentDocId] = useState(null);
     const [message, setMessage] = useState('');
     const [recipient, setRecipient] = useState({
         all: false,
         therapist: false,
-        parents: false,
+        parents: false
     });
 
     useEffect(() => {
         const email = localStorage.getItem('adminEmail');
         if (email) {
-          setAdminEmail(email);
-          fetchDeveloperData(email);
+            setAdminEmail(email);
+            fetchDeveloperData(email);
         }
+    }, []);
 
-      }, []);
-
-      const fetchDeveloperData = async (email) => {
+    const fetchDeveloperData = async (email) => {
         try {
             const querySnapshot = await getDocs(collection(db, "Users", "adminDev", "AdminDevUsers"));
             let found = false;
@@ -58,15 +56,15 @@ function DevelopersAnnouncementsPage() {
 
     const handleProfileImageClick = () => {
         setIsProfileModalOpen(true);
-      };
+    };
 
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
-            setNewProfileImage(file); // Store the new image file
+            setNewProfileImage(file);
             const reader = new FileReader();
             reader.onloadend = () => {
-                setProfileImage(reader.result); // Preview the uploaded image
+                setProfileImage(reader.result);
             };
             reader.readAsDataURL(file);
         }
@@ -76,37 +74,32 @@ function DevelopersAnnouncementsPage() {
         if (currentDocId) {
             try {
                 const docRef = doc(db, "Users", "adminDev", "AdminDevUsers", currentDocId);
-                // Update the profile information
                 await updateDoc(docRef, {
                     name: developerName,
                     profileDescription: profileDescription
                 });
-    
-                // Handle image upload if a new image was selected
+
                 if (newProfileImage) {
                     const storageRef = ref(storage, `developerProfiles/${newProfileImage.name}`);
                     await uploadBytes(storageRef, newProfileImage);
                     const downloadURL = await getDownloadURL(storageRef);
                     await updateDoc(docRef, { profileImage: downloadURL });
                 }
-    
-                // Reset new image state after updating
+
                 setNewProfileImage(null);
-                setIsProfileModalOpen(false); // Close modal after updating
+                setIsProfileModalOpen(false);
                 setError(null);
-    
-                // Show SweetAlert after successful update
+
                 Swal.fire({
                     title: 'Profile Updated',
-                    text: 'Your profile information have been successfully updated.',
+                    text: 'Your profile information has been successfully updated.',
                     icon: 'success',
                     confirmButtonText: 'OK'
                 });
-    
+
             } catch (error) {
                 setError("Failed to update profile information.");
-    
-                // Show error SweetAlert if updating fails
+
                 Swal.fire({
                     title: 'Update Failed',
                     text: 'An error occurred while updating your profile. Please try again.',
@@ -117,46 +110,47 @@ function DevelopersAnnouncementsPage() {
         }
     };
 
-
     const handleRecipientChange = (event) => {
-        setRecipient({
-            ...recipient,
-            [event.target.name]: event.target.checked
-        });
+        const { name, checked } = event.target;
+
+        if (name === 'all') {
+            setRecipient({
+                all: checked,
+                therapist: !checked ? recipient.therapist : false,
+                parents: !checked ? recipient.parents : false
+            });
+        } else {
+            setRecipient({
+                ...recipient,
+                [name]: checked,
+                all: false
+            });
+        }
     };
 
     const handleSend = () => {
-        // Handle sending the announcement here
         console.log("Message:", message);
         console.log("Recipients:", recipient);
     };
 
-    const handleFacilityImageClick = () => {
-        setIsFacilityModalOpen(true); 
-      };
-    
-      const closeFacilityModal = () => {
-        setIsFacilityModalOpen(false);
-      };
-    
-      const handleLogout = () => {
+    const handleLogout = () => {
         localStorage.removeItem('isAuthenticated');
         localStorage.removeItem('adminEmail');
         navigate('/AdminLoginPage');
-      };
+    };
 
     return (
-        <div className="announcements-container">            
+        <div className="announcements-container">
             <aside className="sidebar">
                 <div className="logo-container">
-                <img src={loginImage} alt="Logo" />
-                <h2>UnifiedCare</h2>
+                    <img src={loginImage} alt="Logo" />
+                    <h2>UnifiedCare</h2>
                 </div>
                 <nav className="menu">
-                <a href="#" className="menu-item" onClick={() => navigate('/DevelopersDashboardPage')}>Dashboard</a>
-                <a href="#" className="menu-item" onClick={() => navigate('/DevelopersFacilityListPage')}>Facilities</a>
-                <a href="#" className="menu-item" onClick={() => navigate('/DevelopersApprovalPage')}>Approval</a>
-                <a href="#" className="menu-item" onClick={() => navigate('/DevelopersAnnouncementPage')}>Announcements</a> 
+                    <a href="#" className="menu-item" onClick={() => navigate('/DevelopersDashboardPage')}>Dashboard</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/DevelopersFacilityListPage')}>Facilities</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/DevelopersApprovalPage')}>Approval</a>
+                    <a href="#" className="menu-item" onClick={() => navigate('/DevelopersAnnouncementPage')}>Announcements</a>
                 </nav>
                 <div className="logout">
                     <a href="#" onClick={handleLogout}>Logout</a>
@@ -164,19 +158,18 @@ function DevelopersAnnouncementsPage() {
             </aside>
 
             <div className="main-content">
-
-            <div className="facility-info">
-            <img
-                src={profileImage}
-                alt="Profile"
-                className="facility-img"
-                onClick={handleProfileImageClick}
-                style={{ cursor: 'pointer' }}
-                onError={() => setProfileImage('/path-to-default-profile.jpg')}
-            />
-            <span>{developerName}</span>
-            {error && <p className="error">{error}</p>}
-            </div>
+                <div className="facility-info">
+                    <img
+                        src={profileImage}
+                        alt="Profile"
+                        className="facility-img"
+                        onClick={handleProfileImageClick}
+                        style={{ cursor: 'pointer' }}
+                        onError={() => setProfileImage('/path-to-default-profile.jpg')}
+                    />
+                    <span>{developerName}</span>
+                    {error && <p className="error">{error}</p>}
+                </div>
 
                 <div className="announcement-box">
                     <h2>Announcements</h2>
@@ -202,6 +195,7 @@ function DevelopersAnnouncementsPage() {
                                 name="therapist"
                                 checked={recipient.therapist}
                                 onChange={handleRecipientChange}
+                                disabled={recipient.all}
                             />
                             Therapist
                         </label>
@@ -211,6 +205,7 @@ function DevelopersAnnouncementsPage() {
                                 name="parents"
                                 checked={recipient.parents}
                                 onChange={handleRecipientChange}
+                                disabled={recipient.all}
                             />
                             Parents
                         </label>
@@ -219,7 +214,6 @@ function DevelopersAnnouncementsPage() {
                 </div>
             </div>
 
-            
             {isProfileModalOpen && (
                 <div className="modal">
                     <div className="modal-content">
@@ -268,8 +262,8 @@ function DevelopersAnnouncementsPage() {
                     </div>
                 </div>
             )}
-      </div>
-  );
+        </div>
+    );
 }
 
 export default DevelopersAnnouncementsPage;

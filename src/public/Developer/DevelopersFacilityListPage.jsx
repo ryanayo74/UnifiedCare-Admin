@@ -66,16 +66,41 @@ export default function DevelopersFacilityListPage() {
     try {
       const facilitySnapshot = await getDocs(collection(db, "Users", "facility", "userFacility"));
       const fetchedFacility = [];
-      facilitySnapshot.forEach((doc) => {
-        fetchedFacility.push({ id: doc.id, ...doc.data() }); 
-      });
+  
+      for (const facilityDoc of facilitySnapshot.docs) {
+        const facilityData = facilityDoc.data();
+        const facilityId = facilityDoc.id;
+  
+        // Fetch therapists and parents for each facility
+        const therapistSnapshot = await getDocs(collection(db, "Users", "facility", "userFacility", facilityId, "userTherapist"));
+        const parentsSnapshot = await getDocs(collection(db, "Users", "facility", "userFacility", facilityId, "userParent"));
+  
+        const professionals = therapistSnapshot.size;  // Count of therapists
+        const subscribers = parentsSnapshot.size;     // Count of parents
+  
+        // Ensure these fields are fetched from Firestore
+        fetchedFacility.push({
+          id: facilityId,
+          name: facilityData.name,
+          address: facilityData.address,
+          status: facilityData.status,
+          professionals: professionals,  
+          subscribers: subscribers,     
+          email: facilityData.email,     
+          image: facilityData.image,
+          phoneNumber: facilityData.phoneNumber, 
+          description: facilityData.description
+        });
+      }
+  
       setfacility(fetchedFacility);
     } catch (error) {
       console.error("Error fetching facility data:", error);
       setError("Failed to fetch facility data.");
     }
   };
-
+  
+  
   const handleViewClick = (facility) => {
     setSelectedFacility(facility); // Set selected therapist data
     setIsModalOpen(true); // Open the modal

@@ -38,6 +38,7 @@ function AdminDashboardPage() {
     const [uploadedImages, setUploadedImages] = useState(Array(5).fill(null)); // To hold URLs of uploaded images
     const [modalPage, setModalPage] = useState(1);  // Page navigation in the modal
     const [showMap, setShowMap] = useState(false);
+    const [suggestions, setSuggestions] = useState([]); 
 
     useEffect(() => {
         const email = localStorage.getItem('adminEmail');
@@ -67,7 +68,23 @@ function AdminDashboardPage() {
             fetchYears();  // Fetch the years when users were created
         }
     }, [currentDocId]);
-    
+
+// Handle input change to fetch address suggestions
+const handleInputChange = (e) => {
+    const query = e.target.value;
+    setFacilityAddress(query);
+  
+    if (query.length > 2) { // Start fetching suggestions when the input has more than 2 characters
+      fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}+Cebu+City`)
+        .then(response => response.json())
+        .then(data => {
+          setSuggestions(data);
+        })
+        .catch(err => console.error('Error fetching address suggestions:', err));
+    } else {
+      setSuggestions([]); // Clear suggestions if the input is too short
+    }
+  };
 
     const fetchFacilityData = async (email) => {
         try {
@@ -211,15 +228,13 @@ function AdminDashboardPage() {
     };
     
     
-    
-    
     const handleAddressClick = () => {
         setShowMap(true);
       };
 
     const closeFacilityModal = () => {
         setIsFacilityModalOpen(false);
-        setModalPage(1);  // Reset to the first page when the modal is closed
+        setModalPage(1);  
     };
 
     const handleImageUpload = (e) => {
@@ -232,14 +247,16 @@ function AdminDashboardPage() {
         }
     };
     
-
     const handleMoreImagesUpload = (e) => {
         const files = Array.from(e.target.files);  // Get all the uploaded files
         const newImages = files.map((file) => URL.createObjectURL(file));  // Create URLs for each image
     
         setUploadedImages((prevImages) => [...prevImages, ...newImages]);  // Append new images to the existing ones
     };
-    
+
+    const handleFacilityImageClick = () => {
+        setIsFacilityModalOpen(true);
+    };
 
     const fetchYears = async () => {
         if (!currentDocId) {
@@ -452,61 +469,87 @@ function AdminDashboardPage() {
         }
     };
 
-    const handleFacilityImageClick = () => {
-        setIsFacilityModalOpen(true);
-    };
-
     const handleLogout = () => {
         localStorage.removeItem('isAuthenticated');
         localStorage.removeItem('adminEmail');
         navigate('/AdminLoginPage');
     };
 
+    const handleSuggestionClick = (suggestion) => {
+        setFacilityAddress(suggestion.display_name);
+        setShowMap(false); // Close map after selection
+        setSuggestions([]); // Clear suggestions
+      };
+
     const renderModalContent = () => (
         <div className="modal-body">
+          {/* Facility Name */}
+          <div className="modal-section">
+            <label>Facility Name</label>
+            <input
+              type="text"
+              value={facilityName}
+              onChange={(e) => setFacilityName(e.target.value)}
+            />
+          </div>
+      
+          {/* Facility Description */}
+          <div className="modal-section description">
+            <label>Facility Description</label>
+            <textarea
+              value={facilityDescription}
+              onChange={(e) => setFacilityDescription(e.target.value)}
+            />
+          </div>
+      
+          {/* Facility Address with Search and LeafletMap */}
+          <div>
             <div className="modal-section">
-                <label>Facility Name</label>
-                <input
-                    type="text"
-                    value={facilityName}
-                    onChange={(e) => setFacilityName(e.target.value)}
-                />
-            </div>
-            <div className="modal-section description">
-                <label>Facility Description</label>
-                <textarea
-                    value={facilityDescription}
-                    onChange={(e) => setFacilityDescription(e.target.value)}
-                />
-            </div>
-                    <div>
-            <div className="modal-section">
-                <label>Facility Address</label>
-                <input
+              <label>Facility Address</label>
+              <input
                 type="text"
                 value={facilityAddress}
-                onClick={handleAddressClick}
-                readOnly
-                />
+                placeholder="Search or click on map to select"
+                onClick={() => setShowMap(true)}
+                onChange={handleInputChange} // Enable typing and fetching suggestions
+              />
             </div>
-
-            {showMap && (
-                <LeafletMap onSelectAddress={(address) => {
-                setFacilityAddress(address);
-                setShowMap(false); // Close the map after selecting the address
-                }} />
+      
+            {/* Address Suggestions Dropdown */}
+            {suggestions.length > 0 && (
+              <ul className="suggestions-list">
+                {suggestions.map((suggestion, index) => (
+                  <li
+                    key={index}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="suggestion-item"
+                  >
+                    {suggestion.display_name}
+                  </li>
+                ))}
+              </ul>
             )}
-            </div>
-            <div className="modal-section">
-                <label>Therapy Services</label>
-                <textarea
-                    value={therapyService}
-                    placeholder="Enter therapy services (optional)"
-                    onChange={(e) => setTherapyService(e.target.value)}
-                />
-            </div>
+      
+            {/* Show the Map for Address Selection */}
+            {showMap && (
+              <LeafletMap onSelectAddress={(address) => {
+                setFacilityAddress(address);
+                setShowMap(false); // Close map after selection
+              }} />
+            )}
+          </div>
+      
+          {/* Therapy Services */}
+          <div className="modal-section">
+            <label>Therapy Services</label>
+            <textarea
+              value={therapyService}
+              placeholder="Enter therapy services (optional)"
+              onChange={(e) => setTherapyService(e.target.value)}
+            />
+          </div>
         </div>
-    );
+      );
 
     return (
         <div className="dashboard-container">

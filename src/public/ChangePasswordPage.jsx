@@ -83,6 +83,7 @@ function ChangePasswordPage() {
                 const newUserData = {
                     ...userData,
                     password: newPassword,
+                    status: "Active",
                     createdAt: new Date()
                 };
                 const newUserFacilityRef = doc(db, "Users", "facility", "userFacility", docSnapshot.id);

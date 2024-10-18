@@ -137,11 +137,22 @@ function AnnouncementsPage() {
     };
 
     const handleRecipientChange = (event) => {
-        setRecipient({
-            ...recipient,
-            [event.target.name]: event.target.checked
-        });
-    };
+        const { name, checked } = event.target;
+    
+        if (name === 'all') {
+            setRecipient({
+                all: checked,
+                therapist: checked,
+                parents: checked,
+            });
+        } else {
+            setRecipient({
+                ...recipient,
+                [name]: checked,
+                all: recipient.therapist && recipient.parents && checked,  // Automatically check "All" if both others are selected manually
+            });
+        }
+    };    
 
     const handleSend = () => {
         // Handle sending the announcement here
@@ -195,35 +206,38 @@ function AnnouncementsPage() {
                         onChange={(e) => setMessage(e.target.value)}
                         placeholder="Message"
                     />
-                    <div className="checkbox-group">
-                        <label>
-                            <input
-                                type="checkbox"
-                                name="all"
-                                checked={recipient.all}
-                                onChange={handleRecipientChange}
-                            />
-                            All
-                        </label>
-                        <label>
-                            <input
-                                type="checkbox"
-                                name="therapist"
-                                checked={recipient.therapist}
-                                onChange={handleRecipientChange}
-                            />
-                            Therapist
-                        </label>
-                        <label>
-                            <input
-                                type="checkbox"
-                                name="parents"
-                                checked={recipient.parents}
-                                onChange={handleRecipientChange}
-                            />
-                            Parents
-                        </label>
-                    </div>
+                   <div className="checkbox-group">
+                    <label>
+                        <input
+                            type="checkbox"
+                            name="all"
+                            checked={recipient.all}
+                            onChange={handleRecipientChange}
+                        />
+                        All
+                    </label>
+                    <label>
+                        <input
+                            type="checkbox"
+                            name="therapist"
+                            checked={recipient.therapist}
+                            onChange={handleRecipientChange}
+                            disabled={recipient.all}  // Disable when "All" is selected
+                        />
+                        Therapist
+                    </label>
+                    <label>
+                        <input
+                            type="checkbox"
+                            name="parents"
+                            checked={recipient.parents}
+                            onChange={handleRecipientChange}
+                            disabled={recipient.all}  // Disable when "All" is selected
+                        />
+                        Parents
+                    </label>
+                </div>
+
                     <button className="send-btn" onClick={handleSend}>Send</button>
                 </div>
             </div>
