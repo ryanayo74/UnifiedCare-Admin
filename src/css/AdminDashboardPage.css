@@ -213,19 +213,6 @@ body {
     color: #007bff;
 }
 
-.uploaded-images-preview {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px; /* Space between images */
-}
-
-.uploaded-image-preview {
-    width: 100px; /* Set a width for the previews */
-    height: 100px; /* Set a height for the previews */
-    object-fit: cover; /* Ensure images are cropped correctly */
-    border: 1px solid #ccc; /* Add a border for clarity */
-    border-radius: 5px; /* Rounded corners */
-}
 
 
 /* Ensure the modal layout remains clean */
@@ -289,12 +276,33 @@ body {
     font-weight: bold;
 }
 
-/* Single Upload More Images Button */
-.upload-more-images {
+/* Upload More Images Button moved above the uploaded images */
+.image-upload-section {
     display: flex;
-    justify-content: center;
-    margin: 20px 0;
+    flex-direction: column;
+    align-items: center;
 }
+
+.upload-more-images {
+    margin-bottom: 20px;
+}
+
+.uploaded-images-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px; /* Space between images */
+    justify-content: center;
+    width: 100%; /* Ensures images are centered */
+}
+
+.uploaded-image-preview {
+    width: 100px; /* Set a width for the previews */
+    height: 100px; /* Set a height for the previews */
+    object-fit: cover; /* Ensure images are cropped correctly */
+    border: 1px solid #ccc; /* Add a border for clarity */
+    border-radius: 5px; /* Rounded corners */
+}
+
 
 .upload-more-btn {
     background-color: #007bff;
@@ -304,11 +312,14 @@ body {
     border-radius: 4px;
     cursor: pointer;
     font-size: 16px;
+    margin-bottom: 10px; /* Added space between button and images */
 }
 
 .upload-more-btn:hover {
     background-color: #0056b3;
 }
+
+/* Preview of uploaded images */
 
 .suggestions-list {
     list-style: none;

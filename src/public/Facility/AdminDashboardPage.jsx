@@ -656,37 +656,39 @@ const handleInputChange = (e) => {
 
             {/* Conditional Rendering for Modal Pages */}
             {modalPage === 1 ? renderModalContent() : (
-                <div className="modal-body">                 
-                    {/* Display uploaded images - Only on Page 2 */}
-                    <div className="uploaded-images-preview">
-                        {uploadedImages.map((image, index) => (
-                            image && (
-                                <img
-                                    key={index}
-                                    src={image}
-                                    alt={`Uploaded Image ${index + 1}`}
-                                    className="uploaded-image-preview"
-                                />
-                            )
-                        ))}
-                    </div>
+                <div className="modal-body">
+                    <div className="image-upload-section">
+                        {/* Upload More Images Button - Fixed Position */}
+                        <div className="upload-more-images">
+                            <input
+                                type="file"
+                                id="moreImageUpload"
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                multiple
+                                onChange={handleMoreImagesUpload}
+                            />
+                            <button
+                                className="upload-more-btn"
+                                onClick={() => document.getElementById('moreImageUpload').click()}
+                            >
+                                Upload More Images
+                            </button>
+                        </div>
 
-                    {/* Single Upload Button for More Images - Only on Page 2 */}
-                    <div className="upload-more-images">
-                        <input
-                            type="file"
-                            id="moreImageUpload"
-                            accept="image/*"
-                            style={{ display: 'none' }}
-                            multiple
-                            onChange={handleMoreImagesUpload}
-                        />
-                        <button
-                            className="upload-more-btn"
-                            onClick={() => document.getElementById('moreImageUpload').click()}
-                        >
-                            Upload More Images
-                        </button>
+                        {/* Display uploaded images */}
+                        <div className="uploaded-images-preview">
+                            {uploadedImages.map((image, index) => (
+                                image && (
+                                    <img
+                                        key={index}
+                                        src={image}
+                                        alt={`Uploaded Image ${index + 1}`}
+                                        className="uploaded-image-preview"
+                                    />
+                                )
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}
@@ -698,6 +700,7 @@ const handleInputChange = (e) => {
         </div>
     </div>
 )}
+
         </div>
     );
 }
