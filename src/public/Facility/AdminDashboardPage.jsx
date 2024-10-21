@@ -377,7 +377,7 @@ const handleInputChange = (e) => {
                         clinic_id: clinic_id,
                         name: serviceData.name,
                         description: serviceData.description,
-                        department: serviceData.therapyService
+                        department: serviceData.department
                     }),
                 });
     
