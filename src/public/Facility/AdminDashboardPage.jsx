@@ -40,6 +40,7 @@ function AdminDashboardPage() {
     const [showMap, setShowMap] = useState(false);
     const [suggestions, setSuggestions] = useState([]); 
     const [selectedFiles, setSelectedFiles] = useState([]);
+    const [scheduleAvailability, setScheduleAvailability] = useState([]);
     const storage = getStorage();
     const [imagesToRemove, setImagesToRemove] = useState([]);
 
@@ -249,11 +250,39 @@ const handleInputChange = (e) => {
         }
     };
 
-    const handleMarkForRemoval = (index) => {
-        if (!imagesToRemove.includes(index)) {
-            setImagesToRemove([...imagesToRemove, index]);
-        } else {
-            setImagesToRemove(imagesToRemove.filter(i => i !== index));
+    const handleSaveAvailability = async () => {
+        try {
+            // Here, you might want to save the schedule availability to Firestore or handle it as needed
+            if (!currentDocId) {
+                console.error("Current Document ID is not defined.");
+                return;
+            }
+    
+            const docRef = doc(db, "Users", "facility", "userFacility", currentDocId, "scheduleAvailability", currentDocId);
+            
+            // Save the schedule availability to Firestore
+            await setDoc(docRef, {
+                availability: scheduleAvailability, // Assuming you want to save the availability
+            }, { merge: true });
+    
+            Swal.fire({
+                icon: 'success',
+                title: 'Availability Saved!',
+                text: 'Your schedule availability has been updated.',
+                confirmButtonText: 'Okay',
+            });
+    
+            // Optionally, close the modal after saving
+            setIsFacilityModalOpen(false);
+            setModalPage(1); // Reset to the first modal page if needed
+        } catch (error) {
+            console.error("Error saving availability:", error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Save Failed',
+                text: 'There was an error saving your availability. Please try again.',
+                confirmButtonText: 'Try Again',
+            });
         }
     };
 
@@ -351,6 +380,29 @@ const handleInputChange = (e) => {
           </div>
         </div>
       );
+
+      const renderScheduleAvailability = () => (
+        <div className="modal-body">
+            <h2>Schedule Availability</h2>
+            <div className="availability-form">
+                {/* Example form fields for availability */}
+                <label>Available Days:</label>
+                <input 
+                    type="text" 
+                    placeholder="e.g., Monday, Wednesday, Friday"
+                    value={scheduleAvailability.join(', ')}
+                    onChange={(e) => setScheduleAvailability(e.target.value.split(',').map(day => day.trim()))}
+                />
+                <label>Available Time:</label>
+                <input 
+                    type="text"
+                    placeholder="e.g., 9 AM - 5 PM"
+                    // Handle changes as needed
+                />
+                <button onClick={handleSaveAvailability}>Save Availability</button>
+            </div>
+        </div>
+        );
 
       const handleLogout = () => {
         localStorage.removeItem('isAuthenticated');
@@ -702,66 +754,73 @@ const handleInputChange = (e) => {
                 >
                     &lt;
                 </button>
-                <span>{`Page ${modalPage} of 2`}</span>
+                <span>{`Page ${modalPage} of 3`}</span>
                 <button
                     className="page-btn"
                     onClick={() => setModalPage((prev) => prev + 1)}
-                    disabled={modalPage === 2}
+                    disabled={modalPage === 3}
                 >
                     &gt;
                 </button>
             </div>
 
             {/* Conditional Rendering for Modal Pages */}
-            {modalPage === 1 ? renderModalContent() : (
-                <div className="modal-body">
-                    <div className="image-upload-section">
-                        {/* Upload More Images Button - Fixed Position */}
-                        <div className="upload-more-images">
-                        <input
-                            type="file"
-                            id="moreImageUpload"
-                            accept="image/*"
-                            style={{ display: 'none' }}
-                            multiple
-                            onChange={handleMoreImagesUpload} // Bind the event handler here
-                        />
-                            <button
-                                className="upload-more-btn"
-                                onClick={() => document.getElementById('moreImageUpload').click()}
-                            >
-                                Upload More Images
-                            </button>
-                        </div>
+            {modalPage === 1 ? (
+                    renderModalContent()
+                ) : modalPage === 2 ? (
+                    <div className="modal-body">
+                        <div className="image-upload-section">
+                            {/* Upload More Images Button - Fixed Position */}
+                            <div className="upload-more-images">
+                                <input
+                                    type="file"
+                                    id="moreImageUpload"
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    multiple
+                                    onChange={handleMoreImagesUpload} // Bind the event handler here
+                                />
+                                <button
+                                    className="upload-more-btn"
+                                    onClick={() => document.getElementById('moreImageUpload').click()}
+                                >
+                                    Upload More Images
+                                </button>
+                            </div>
 
-                        {/* Display uploaded images */}
-                        <div className="uploaded-images-preview">
-                            {uploadedImages.map((image, index) => (
-                                image && (
-                                    <div key={index} className="uploaded-image-wrapper">
-                                        <img
-                                            src={image}
-                                            alt={`Uploaded Image ${index + 1}`}
-                                            className="uploaded-image-preview"
-                                        />
-                                        <button 
-                                            className="remove-image-btn" 
-                                            onClick={() => handleRemoveImage(index)}
-                                        >
-                                            X
-                                        </button>
-                                    </div>
-                                )
-                            ))}
+                            {/* Display uploaded images */}
+                            <div className="uploaded-images-preview">
+                                {uploadedImages.map((image, index) => (
+                                    image && (
+                                        <div key={index} className="uploaded-image-wrapper">
+                                            <img
+                                                src={image}
+                                                alt={`Uploaded Image ${index + 1}`}
+                                                className="uploaded-image-preview"
+                                            />
+                                            <button 
+                                                className="remove-image-btn" 
+                                                onClick={() => handleRemoveImage(index)}
+                                            >
+                                                X
+                                            </button>
+                                        </div>
+                                    )
+                                ))}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                ) : (
+                    // Render Schedule Availability (Third Modal Page)
+                    renderScheduleAvailability()
+                )}
 
-            <div className="modal-footer">
-                <button className="btn-update" onClick={handleUpdateClick}>UPDATE</button>
-                <button className="btn-cancel" onClick={closeFacilityModal}>CANCEL</button>
-            </div>
+                <div className="modal-footer">
+                    <button className="btn-update" onClick={modalPage === 3 ? handleSaveAvailability : handleUpdateClick}>
+                        {modalPage === 3 ? 'SAVE AVAILABILITY' : 'UPDATE'}
+                    </button>
+                    <button className="btn-cancel" onClick={closeFacilityModal}>CANCEL</button>
+                </div>
         </div>
     </div>
 )}
