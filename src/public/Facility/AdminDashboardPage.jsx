@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, updateDoc, doc, setDoc, getDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { collection, getDocs, updateDoc, doc, setDoc, getDoc, arrayUnion, getFirestore } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL, getStorage, uploadBytesResumable } from "firebase/storage";
 import { db, storage } from '../../config/firebase';
 import { Bar } from 'react-chartjs-2';
 import { Line } from 'react-chartjs-2';
@@ -35,10 +35,13 @@ function AdminDashboardPage() {
     const [years, setYears] = useState([]);
     const [viewMode, setViewMode] = useState('userData');
     const [additionalImages, setAdditionalImages] = useState(Array(5).fill(null));
-    const [uploadedImages, setUploadedImages] = useState(Array(5).fill(null)); // To hold URLs of uploaded images
+    const [uploadedImages, setUploadedImages] = useState([]);
     const [modalPage, setModalPage] = useState(1);  // Page navigation in the modal
     const [showMap, setShowMap] = useState(false);
     const [suggestions, setSuggestions] = useState([]); 
+    const [selectedFiles, setSelectedFiles] = useState([]);
+    const storage = getStorage();
+    
 
     useEffect(() => {
         const email = localStorage.getItem('adminEmail');
@@ -55,6 +58,28 @@ function AdminDashboardPage() {
                 fetchYears();  // Fetch years after facility data is loaded
             });
         }
+    }, []);
+
+    useEffect(() => {
+        const fetchExistingImages = async () => {
+            const currentDocId = localStorage.getItem('currentDocId');
+            if (currentDocId) {
+                try {
+                    const facilityDocRef = doc(db, "Users", "facility", "userFacility", currentDocId);
+                    const facilityDoc = await getDoc(facilityDocRef);
+                    if (facilityDoc.exists()) {
+                        const data = facilityDoc.data();
+                        const existingImages = data.uploadedImages || [];
+                        const additionalImages = data.additionalImages || [];
+                        setUploadedImages([...existingImages, ...additionalImages]);  // Combine both arrays
+                    }
+                } catch (error) {
+                    console.error("Error fetching existing images:", error);
+                }
+            }
+        };
+    
+        fetchExistingImages();
     }, []);
     
     useEffect(() => {
@@ -112,37 +137,46 @@ const handleInputChange = (e) => {
             setError("Failed to fetch facility data.");
         }
     };
+
     
 
+    const handleMoreImagesUpload = (event) => {
+        const files = Array.from(event.target.files);
+        const filePreviews = files.map(file => URL.createObjectURL(file));
+    
+        // Add new files and their previews to the existing ones
+        setSelectedFiles((prevFiles) => [...prevFiles, ...files]);
+        setUploadedImages((prevImages) => [...prevImages, ...filePreviews]);
+    };
+
+    
+    
+    // Handle updating facility data, images, and clinic services
     const handleUpdateClick = async () => {
         try {
             let updatedData = {
                 name: facilityName,
                 description: facilityDescription,
                 address: facilityAddress,
+                therapyService: therapyService,
             };
     
             if (selectedImageFile && currentDocId) {
-                // Upload image to Firebase Storage
                 const storageRef = ref(storage, `facilityImages/${selectedImageFile.name}`);
                 await uploadBytes(storageRef, selectedImageFile);
-    
-                // Get the download URL for the uploaded image
                 const downloadURL = await getDownloadURL(storageRef);
-                updatedData.image = downloadURL; // This URL should be saved to Firestore
+                updatedData.image = downloadURL;
             }
     
-            // Upload additional images
-            const additionalImageURLs = await Promise.all(additionalImages.map(async (imageFile) => {
-                if (imageFile) {
-                    const storageRef = ref(storage, `facilityImages/${imageFile.name}`);
-                    await uploadBytes(storageRef, imageFile);
+            const additionalImageURLs = await Promise.all(
+                selectedFiles.map(async (file) => {
+                    const storageRef = ref(storage, `facilityImages/${file.name}`);
+                    await uploadBytes(storageRef, file);
                     return await getDownloadURL(storageRef);
-                }
-                return null;
-            }));
+                })
+            );
     
-            updatedData.additionalImages = additionalImageURLs.filter(Boolean); // Filter out any null values
+            updatedData.additionalImages = arrayUnion(...additionalImageURLs); // Use arrayUnion to merge arrays
     
             if (currentDocId) {
                 const docRef = doc(db, "Users", "facility", "userFacility", currentDocId);
@@ -151,43 +185,146 @@ const handleInputChange = (e) => {
                 const clinicServicesRef = doc(db, "Users", "facility", "userFacility", currentDocId, "clinic_services", currentDocId);
                 await setDoc(clinicServicesRef, {
                     name: facilityName,
-                    description: facilityDescription
+                    description: facilityDescription,
+                    therapyService: therapyService,
                 }, { merge: true });
     
-                // Call the API to update the clinic service
                 await postClinicServiceToAPI({
                     clinic_id: currentDocId,
                     name: facilityName,
-                    description: facilityDescription
+                    description: facilityDescription,
                 });
     
                 setFacilityImage(updatedData.image || facilityImage);
-                setAdditionalImages(Array(5).fill(null)); // Reset additional images
+                setAdditionalImages(Array(5).fill(null));
                 setError(null);
                 setIsFacilityModalOpen(false);
                 setSelectedImageFile(null);
-                setUploadedImages(additionalImageURLs); // Update uploaded images
+                setSelectedFiles([]);
+                setUploadedImages([...uploadedImages, ...additionalImageURLs]); // Update state with new URLs
     
                 Swal.fire({
                     icon: 'success',
-                    title: 'Profile and Clinic Services Updated!',
-                    text: 'Your facility and clinic services information have been successfully updated.',
-                    confirmButtonText: 'Okay'
+                    title: 'Profile Updated!',
+                    text: 'Your facility and services information have been updated.',
+                    confirmButtonText: 'Okay',
                 });
             }
         } catch (error) {
             console.error("Error updating facility data:", error);
-            setError("Failed to update the facility and clinic services information. Please try again.");
+            setError("Failed to update the facility. Please try again.");
     
             Swal.fire({
                 icon: 'error',
                 title: 'Update Failed',
-                text: 'There was an error updating your facility and clinic services information.',
-                confirmButtonText: 'Try Again'
+                text: 'There was an error updating the facility information.',
+                confirmButtonText: 'Try Again',
             });
         }
     };
-    
+
+
+    const closeFacilityModal = () => {
+        setIsFacilityModalOpen(false);
+        setModalPage(1);  
+    };
+
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setSelectedImageFile(file);
+            const imagePreviewURL = URL.createObjectURL(file);
+            setFacilityImage(imagePreviewURL);  
+            setError(null);
+        }
+    };
+
+    const handleFacilityImageClick = () => {
+        setIsFacilityModalOpen(true);
+    };
+
+    const handleSuggestionClick = (suggestion) => {
+        setFacilityAddress(suggestion.display_name);
+        setShowMap(false); // Close map after selection
+        setSuggestions([]); // Clear suggestions
+      };
+
+    const renderModalContent = () => (
+        <div className="modal-body">
+          {/* Facility Name */}
+          <div className="modal-section">
+            <label>Facility Name</label>
+            <input
+              type="text"
+              value={facilityName}
+              onChange={(e) => setFacilityName(e.target.value)}
+            />
+          </div>
+      
+          {/* Facility Description */}
+          <div className="modal-section description">
+            <label>Facility Description</label>
+            <textarea
+              value={facilityDescription}
+              onChange={(e) => setFacilityDescription(e.target.value)}
+            />
+          </div>
+      
+          {/* Facility Address with Search and LeafletMap */}
+          <div>
+            <div className="modal-section">
+              <label>Facility Address</label>
+              <input
+                type="text"
+                value={facilityAddress}
+                placeholder="Search or click on map to select"
+                onClick={() => setShowMap(true)}
+                onChange={handleInputChange} // Enable typing and fetching suggestions
+              />
+            </div>
+      
+            {/* Address Suggestions Dropdown */}
+            {suggestions.length > 0 && (
+              <ul className="suggestions-list">
+                {suggestions.map((suggestion, index) => (
+                  <li
+                    key={index}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="suggestion-item"
+                  >
+                    {suggestion.display_name}
+                  </li>
+                ))}
+              </ul>
+            )}
+      
+            {/* Show the Map for Address Selection */}
+            {showMap && (
+              <LeafletMap onSelectAddress={(address) => {
+                setFacilityAddress(address);
+                setShowMap(false); // Close map after selection
+              }} />
+            )}
+          </div>
+      
+          {/* Therapy Services */}
+          <div className="modal-section">
+            <label>Therapy Services</label>
+            <textarea
+              value={therapyService}
+              placeholder="Enter therapy services (optional)"
+              onChange={(e) => setTherapyService(e.target.value)}
+            />
+          </div>
+        </div>
+      );
+
+      const handleLogout = () => {
+        localStorage.removeItem('isAuthenticated');
+        localStorage.removeItem('adminEmail');
+        navigate('/AdminLoginPage');
+    };
+
     const postClinicServiceToAPI = async (serviceData) => {
         try {
             // Step 1: Get the document reference for the clinic service
@@ -225,37 +362,6 @@ const handleInputChange = (e) => {
             console.error('Error fetching clinic_id or updating clinic service:', error);
             alert('Error: ' + error.message);
         }
-    };
-    
-    
-    const handleAddressClick = () => {
-        setShowMap(true);
-      };
-
-    const closeFacilityModal = () => {
-        setIsFacilityModalOpen(false);
-        setModalPage(1);  
-    };
-
-    const handleImageUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setSelectedImageFile(file);  // This line should correctly set the image file
-            const imagePreviewURL = URL.createObjectURL(file);
-            setFacilityImage(imagePreviewURL);  // Ensure you're previewing the right image
-            setError(null);
-        }
-    };
-    
-    const handleMoreImagesUpload = (e) => {
-        const files = Array.from(e.target.files);  // Get all the uploaded files
-        const newImages = files.map((file) => URL.createObjectURL(file));  // Create URLs for each image
-    
-        setUploadedImages((prevImages) => [...prevImages, ...newImages]);  // Append new images to the existing ones
-    };
-
-    const handleFacilityImageClick = () => {
-        setIsFacilityModalOpen(true);
     };
 
     const fetchYears = async () => {
@@ -469,88 +575,6 @@ const handleInputChange = (e) => {
         }
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem('isAuthenticated');
-        localStorage.removeItem('adminEmail');
-        navigate('/AdminLoginPage');
-    };
-
-    const handleSuggestionClick = (suggestion) => {
-        setFacilityAddress(suggestion.display_name);
-        setShowMap(false); // Close map after selection
-        setSuggestions([]); // Clear suggestions
-      };
-
-    const renderModalContent = () => (
-        <div className="modal-body">
-          {/* Facility Name */}
-          <div className="modal-section">
-            <label>Facility Name</label>
-            <input
-              type="text"
-              value={facilityName}
-              onChange={(e) => setFacilityName(e.target.value)}
-            />
-          </div>
-      
-          {/* Facility Description */}
-          <div className="modal-section description">
-            <label>Facility Description</label>
-            <textarea
-              value={facilityDescription}
-              onChange={(e) => setFacilityDescription(e.target.value)}
-            />
-          </div>
-      
-          {/* Facility Address with Search and LeafletMap */}
-          <div>
-            <div className="modal-section">
-              <label>Facility Address</label>
-              <input
-                type="text"
-                value={facilityAddress}
-                placeholder="Search or click on map to select"
-                onClick={() => setShowMap(true)}
-                onChange={handleInputChange} // Enable typing and fetching suggestions
-              />
-            </div>
-      
-            {/* Address Suggestions Dropdown */}
-            {suggestions.length > 0 && (
-              <ul className="suggestions-list">
-                {suggestions.map((suggestion, index) => (
-                  <li
-                    key={index}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className="suggestion-item"
-                  >
-                    {suggestion.display_name}
-                  </li>
-                ))}
-              </ul>
-            )}
-      
-            {/* Show the Map for Address Selection */}
-            {showMap && (
-              <LeafletMap onSelectAddress={(address) => {
-                setFacilityAddress(address);
-                setShowMap(false); // Close map after selection
-              }} />
-            )}
-          </div>
-      
-          {/* Therapy Services */}
-          <div className="modal-section">
-            <label>Therapy Services</label>
-            <textarea
-              value={therapyService}
-              placeholder="Enter therapy services (optional)"
-              onChange={(e) => setTherapyService(e.target.value)}
-            />
-          </div>
-        </div>
-      );
-
     return (
         <div className="dashboard-container">
             <aside className="sidebar">
@@ -660,14 +684,14 @@ const handleInputChange = (e) => {
                     <div className="image-upload-section">
                         {/* Upload More Images Button - Fixed Position */}
                         <div className="upload-more-images">
-                            <input
-                                type="file"
-                                id="moreImageUpload"
-                                accept="image/*"
-                                style={{ display: 'none' }}
-                                multiple
-                                onChange={handleMoreImagesUpload}
-                            />
+                        <input
+                            type="file"
+                            id="moreImageUpload"
+                            accept="image/*"
+                            style={{ display: 'none' }}
+                            multiple
+                            onChange={handleMoreImagesUpload} // Bind the event handler here
+                        />
                             <button
                                 className="upload-more-btn"
                                 onClick={() => document.getElementById('moreImageUpload').click()}
