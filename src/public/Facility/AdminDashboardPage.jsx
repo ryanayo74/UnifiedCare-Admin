@@ -41,8 +41,9 @@ function AdminDashboardPage() {
     const [suggestions, setSuggestions] = useState([]); 
     const [selectedFiles, setSelectedFiles] = useState([]);
     const storage = getStorage();
-    
+    const [imagesToRemove, setImagesToRemove] = useState([]);
 
+    
     useEffect(() => {
         const email = localStorage.getItem('adminEmail');
         const storedDocId = localStorage.getItem('currentDocId');
@@ -71,14 +72,14 @@ function AdminDashboardPage() {
                         const data = facilityDoc.data();
                         const existingImages = data.uploadedImages || [];
                         const additionalImages = data.additionalImages || [];
-                        setUploadedImages([...existingImages, ...additionalImages]);  // Combine both arrays
+                        setUploadedImages([...existingImages, ...additionalImages]);
                     }
                 } catch (error) {
                     console.error("Error fetching existing images:", error);
                 }
             }
         };
-    
+
         fetchExistingImages();
     }, []);
     
@@ -122,7 +123,7 @@ const handleInputChange = (e) => {
                     setFacilityImage(data.image || '/path-to-default-facility.jpg');
                     setFacilityDescription(data.description || 'Set your facility description');
                     setFacilityAddress(data.address || 'Set your facility address.');
-                    setTherapyService(data.therapyService || '');
+                    setTherapyService(data.therapyService || 'Enter therapy services');
                     setCurrentDocId(doc.id);
                     localStorage.setItem('currentDocId', doc.id);  // Store the doc ID in localStorage
                     found = true;
@@ -186,13 +187,14 @@ const handleInputChange = (e) => {
                 await setDoc(clinicServicesRef, {
                     name: facilityName,
                     description: facilityDescription,
-                    therapyService: therapyService,
+                    department: therapyService,
                 }, { merge: true });
     
                 await postClinicServiceToAPI({
                     clinic_id: currentDocId,
                     name: facilityName,
                     description: facilityDescription,
+                    department: therapyService,
                 });
     
                 setFacilityImage(updatedData.image || facilityImage);
@@ -220,6 +222,38 @@ const handleInputChange = (e) => {
                 text: 'There was an error updating the facility information.',
                 confirmButtonText: 'Try Again',
             });
+        }
+    };
+
+    const handleRemoveImage = (index) => {
+        // Toggle the image's removal state
+        if (imagesToRemove.includes(index)) {
+            setImagesToRemove(imagesToRemove.filter(i => i !== index));
+        } else {
+            setImagesToRemove([...imagesToRemove, index]);
+        }
+    };
+
+    const updateFirestoreImages = async (newImages) => {
+        if (currentDocId) {
+            try {
+                const docRef = doc(db, "Users", "facility", "userFacility", currentDocId);
+                await updateDoc(docRef, {
+                    additionalImages: newImages
+                });
+                console.log("Firestore updated successfully");
+            } catch (error) {
+                console.error("Error updating Firestore:", error);
+                setError("Failed to update the image list in Firestore.");
+            }
+        }
+    };
+
+    const handleMarkForRemoval = (index) => {
+        if (!imagesToRemove.includes(index)) {
+            setImagesToRemove([...imagesToRemove, index]);
+        } else {
+            setImagesToRemove(imagesToRemove.filter(i => i !== index));
         }
     };
 
@@ -312,7 +346,6 @@ const handleInputChange = (e) => {
             <label>Therapy Services</label>
             <textarea
               value={therapyService}
-              placeholder="Enter therapy services (optional)"
               onChange={(e) => setTherapyService(e.target.value)}
             />
           </div>
@@ -344,6 +377,7 @@ const handleInputChange = (e) => {
                         clinic_id: clinic_id,
                         name: serviceData.name,
                         description: serviceData.description,
+                        department: serviceData.therapyService
                     }),
                 });
     
@@ -704,12 +738,19 @@ const handleInputChange = (e) => {
                         <div className="uploaded-images-preview">
                             {uploadedImages.map((image, index) => (
                                 image && (
-                                    <img
-                                        key={index}
-                                        src={image}
-                                        alt={`Uploaded Image ${index + 1}`}
-                                        className="uploaded-image-preview"
-                                    />
+                                    <div key={index} className="uploaded-image-wrapper">
+                                        <img
+                                            src={image}
+                                            alt={`Uploaded Image ${index + 1}`}
+                                            className="uploaded-image-preview"
+                                        />
+                                        <button 
+                                            className="remove-image-btn" 
+                                            onClick={() => handleRemoveImage(index)}
+                                        >
+                                            X
+                                        </button>
+                                    </div>
                                 )
                             ))}
                         </div>
