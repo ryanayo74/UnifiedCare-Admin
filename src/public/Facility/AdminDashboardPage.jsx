@@ -43,6 +43,13 @@ function AdminDashboardPage() {
     const [scheduleAvailability, setScheduleAvailability] = useState([]);
     const storage = getStorage();
     const [imagesToRemove, setImagesToRemove] = useState([]);
+    const [availabilitySchedule, setAvailabilitySchedule] = useState({
+        Monday: { start: '', end: '' },
+        Tuesday: { start: '', end: '' },
+        Wednesday: { start: '', end: '' },
+        Thursday: { start: '', end: '' },
+        Friday: { start: '', end: '' },
+    });
 
     
     useEffect(() => {
@@ -252,29 +259,21 @@ const handleInputChange = (e) => {
 
     const handleSaveAvailability = async () => {
         try {
-            // Here, you might want to save the schedule availability to Firestore or handle it as needed
-            if (!currentDocId) {
-                console.error("Current Document ID is not defined.");
-                return;
-            }
-    
+            const currentDocId = 'yourCurrentDocId'; // Replace with your logic to get the current document ID
             const docRef = doc(db, "Users", "facility", "userFacility", currentDocId, "scheduleAvailability", currentDocId);
-            
-            // Save the schedule availability to Firestore
             await setDoc(docRef, {
-                availability: scheduleAvailability, // Assuming you want to save the availability
+                availabilitySchedule: scheduleAvailability,
             }, { merge: true });
-    
+
             Swal.fire({
                 icon: 'success',
                 title: 'Availability Saved!',
                 text: 'Your schedule availability has been updated.',
                 confirmButtonText: 'Okay',
             });
-    
-            // Optionally, close the modal after saving
+
             setIsFacilityModalOpen(false);
-            setModalPage(1); // Reset to the first modal page if needed
+            setModalPage(1);
         } catch (error) {
             console.error("Error saving availability:", error);
             Swal.fire({
@@ -385,24 +384,48 @@ const handleInputChange = (e) => {
         <div className="modal-body">
             <h2>Schedule Availability</h2>
             <div className="availability-form">
-                {/* Example form fields for availability */}
-                <label>Available Days:</label>
-                <input 
-                    type="text" 
-                    placeholder="e.g., Monday, Wednesday, Friday"
-                    value={scheduleAvailability.join(', ')}
-                    onChange={(e) => setScheduleAvailability(e.target.value.split(',').map(day => day.trim()))}
-                />
-                <label>Available Time:</label>
-                <input 
-                    type="text"
-                    placeholder="e.g., 9 AM - 5 PM"
-                    // Handle changes as needed
-                />
-                <button onClick={handleSaveAvailability}>Save Availability</button>
+                {Object.keys(scheduleAvailability).map((day) => (
+                    <div key={day} className="availability-day">
+                        <label>
+                            <input
+                                type="checkbox"
+                                checked={scheduleAvailability[day].start !== ''} // Check if the day is selected
+                                onChange={(e) => {
+                                    const selected = e.target.checked;
+                                    setScheduleAvailability(prev => ({
+                                        ...prev,
+                                        [day]: selected ? { ...prev[day], start: prev[day].start || '', end: prev[day].end || '' } : { start: '', end: '' },
+                                    }));
+                                }}
+                            />
+                            {day}
+                        </label>
+                        {scheduleAvailability[day].start && (
+                            <div className="time-inputs">
+                                <input
+                                    type="time"
+                                    value={scheduleAvailability[day].start}
+                                    onChange={(e) => setScheduleAvailability(prev => ({
+                                        ...prev,
+                                        [day]: { ...prev[day], start: e.target.value },
+                                    }))}
+                                />
+                                <span>to</span>
+                                <input
+                                    type="time"
+                                    value={scheduleAvailability[day].end}
+                                    onChange={(e) => setScheduleAvailability(prev => ({
+                                        ...prev,
+                                        [day]: { ...prev[day], end: e.target.value },
+                                    }))}
+                                />
+                            </div>
+                        )}
+                    </div>
+                ))}
             </div>
         </div>
-        );
+    );
 
       const handleLogout = () => {
         localStorage.removeItem('isAuthenticated');
@@ -434,8 +457,7 @@ const handleInputChange = (e) => {
                 });
     
                 if (response.ok) {
-                    console.log('Service updated successfully');
-                    alert('Service updated successfully');
+                    console.log('Service updated successfully');                  
                 } else {
                     console.error('Failed to update service:', response.statusText);
                     alert('Failed to update service: ' + response.statusText);
@@ -727,104 +749,99 @@ const handleInputChange = (e) => {
 
 {/* Facility Modal */}
 {isFacilityModalOpen && (
-    <div className="modal">
-        <div className="modal-content">
-            <div className="modal-header">
-                <img
-                    src={facilityImage}
-                    alt="Facility"
-                    className="modal-facility-img"
-                    onClick={() => document.getElementById('profileImageUpload').click()}
-                />
-                <input
-                    type="file"
-                    id="profileImageUpload"
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    onChange={handleImageUpload}
-                />
-            </div>
+                <div className="modal">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <img
+                                src={facilityImage}
+                                alt="Facility"
+                                className="modal-facility-img"
+                                onClick={() => document.getElementById('profileImageUpload').click()}
+                            />
+                            <input
+                                type="file"
+                                id="profileImageUpload"
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                onChange={handleImageUpload}
+                            />
+                        </div>
 
-            {/* Page Indicator */}
-            <div className="page-navigation">
-                <button
-                    className="page-btn"
-                    onClick={() => setModalPage((prev) => prev - 1)}
-                    disabled={modalPage === 1}
-                >
-                    &lt;
-                </button>
-                <span>{`Page ${modalPage} of 3`}</span>
-                <button
-                    className="page-btn"
-                    onClick={() => setModalPage((prev) => prev + 1)}
-                    disabled={modalPage === 3}
-                >
-                    &gt;
-                </button>
-            </div>
+                        <div className="page-navigation">
+                            <button
+                                className="page-btn"
+                                onClick={() => setModalPage((prev) => prev - 1)}
+                                disabled={modalPage === 1}
+                            >
+                                &lt;
+                            </button>
+                            <span>{`Page ${modalPage} of 3`}</span>
+                            <button
+                                className="page-btn"
+                                onClick={() => setModalPage((prev) => prev + 1)}
+                                disabled={modalPage === 3}
+                            >
+                                &gt;
+                            </button>
+                        </div>
 
-            {/* Conditional Rendering for Modal Pages */}
-            {modalPage === 1 ? (
-                    renderModalContent()
-                ) : modalPage === 2 ? (
-                    <div className="modal-body">
-                        <div className="image-upload-section">
-                            {/* Upload More Images Button - Fixed Position */}
-                            <div className="upload-more-images">
-                                <input
-                                    type="file"
-                                    id="moreImageUpload"
-                                    accept="image/*"
-                                    style={{ display: 'none' }}
-                                    multiple
-                                    onChange={handleMoreImagesUpload} // Bind the event handler here
-                                />
-                                <button
-                                    className="upload-more-btn"
-                                    onClick={() => document.getElementById('moreImageUpload').click()}
-                                >
-                                    Upload More Images
-                                </button>
+                        {/* Conditional Rendering for Modal Pages */}
+                        {modalPage === 1 ? (
+                            renderModalContent()
+                        ) : modalPage === 2 ? (
+                            <div className="modal-body">
+                                <div className="image-upload-section">
+                                    <div className="upload-more-images">
+                                        <input
+                                            type="file"
+                                            id="moreImageUpload"
+                                            accept="image/*"
+                                            style={{ display: 'none' }}
+                                            multiple
+                                            onChange={handleMoreImagesUpload}
+                                        />
+                                        <button
+                                            className="upload-more-btn"
+                                            onClick={() => document.getElementById('moreImageUpload').click()}
+                                        >
+                                            Upload More Images
+                                        </button>
+                                    </div>
+
+                                    <div className="uploaded-images-preview">
+                                        {uploadedImages.map((image, index) => (
+                                            image && (
+                                                <div key={index} className="uploaded-image-wrapper">
+                                                    <img
+                                                        src={image}
+                                                        alt={`Uploaded Image ${index + 1}`}
+                                                        className="uploaded-image-preview"
+                                                    />
+                                                    <button 
+                                                        className="remove-image-btn" 
+                                                        onClick={() => handleRemoveImage(index)}
+                                                    >
+                                                        X
+                                                    </button>
+                                                </div>
+                                            )
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
+                        ) : (
+                            renderScheduleAvailability() // Render the third modal for schedule availability
+                        )}
 
-                            {/* Display uploaded images */}
-                            <div className="uploaded-images-preview">
-                                {uploadedImages.map((image, index) => (
-                                    image && (
-                                        <div key={index} className="uploaded-image-wrapper">
-                                            <img
-                                                src={image}
-                                                alt={`Uploaded Image ${index + 1}`}
-                                                className="uploaded-image-preview"
-                                            />
-                                            <button 
-                                                className="remove-image-btn" 
-                                                onClick={() => handleRemoveImage(index)}
-                                            >
-                                                X
-                                            </button>
-                                        </div>
-                                    )
-                                ))}
-                            </div>
+                        <div className="modal-footer">
+                            <button className="btn-update" onClick={modalPage === 3 ? handleSaveAvailability : handleUpdateClick}>
+                                {modalPage === 3 ? 'UPDATE' : 'UPDATE'}
+                            </button>
+                            <button className="btn-cancel" onClick={() => setIsFacilityModalOpen(false)}>CANCEL</button>
                         </div>
                     </div>
-                ) : (
-                    // Render Schedule Availability (Third Modal Page)
-                    renderScheduleAvailability()
-                )}
-
-                <div className="modal-footer">
-                    <button className="btn-update" onClick={modalPage === 3 ? handleSaveAvailability : handleUpdateClick}>
-                        {modalPage === 3 ? 'SAVE AVAILABILITY' : 'UPDATE'}
-                    </button>
-                    <button className="btn-cancel" onClick={closeFacilityModal}>CANCEL</button>
                 </div>
-        </div>
-    </div>
-)}
-
+            )}
         </div>
     );
 }

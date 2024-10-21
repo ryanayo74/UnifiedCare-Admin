@@ -222,22 +222,13 @@ const handleImageUpload = (e) => {
           // Reference to the new facility in the userFacility collection
           const userFacilityRef = doc(db, "Users", "facility", "newUserFacility", sanitizedFacilityName);
   
-          // Save facility details to Firestore
-          await setDoc(userFacilityRef, {
-            name: facility.name,
-            email: facility.email,
-            phoneNumber: facility.phoneNumber,
-            password: 'admin123',
-            emailVerified: false, // Initially set as false
-          });
-  
           // Add clinic_services to the facility
           const clinicServicesRef = collection(userFacilityRef, "clinic_services");
   
           // Retrieve and update the global clinic_id counter
           const globalCounterRef = doc(db, "counters", "clinicServiceCounter");
           let clinic_id = 1; // Default value
-
+  
           await runTransaction(db, async (transaction) => {
             const counterDoc = await transaction.get(globalCounterRef);
             
@@ -259,8 +250,17 @@ const handleImageUpload = (e) => {
               description: "put your description here",
               name: facility.name
             });
+  
+            // Save the clinic_id as facility_id in the userFacility document
+            transaction.set(userFacilityRef, {
+              name: facility.name,
+              email: facility.email,
+              phoneNumber: facility.phoneNumber,
+              password: 'admin123',
+              emailVerified: false, // Initially set as false
+              facility_id: clinic_id.toString()
+            });
           });
-          
   
           // Remove the facility from the pending collection
           const pendingRef = doc(db, "Users", "facility", "pending", facility.id);
@@ -294,9 +294,6 @@ const handleImageUpload = (e) => {
       }
     });
   };
-  
-  
-  
 
   const handleReject = async (facilityId) => {
     Swal.fire({

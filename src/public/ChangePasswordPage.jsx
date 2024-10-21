@@ -55,7 +55,6 @@ function ChangePasswordPage() {
                 console.log('Service posted successfully');
             } else {
                 console.error('Failed to post service', response.statusText);
-                alert('Failed to post service: ' + response.statusText);
             }
         } catch (error) {
             console.error('Error posting clinic service:', error);
