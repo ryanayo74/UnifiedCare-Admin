@@ -43,6 +43,10 @@ function AdminDashboardPage() {
     const [scheduleAvailability, setScheduleAvailability] = useState([]);
     const storage = getStorage();
     const [imagesToRemove, setImagesToRemove] = useState([]);
+    const handleSelectAddress = (address) => {
+        setFacilityAddress(address); // Update the facility address
+        setShowMap(false); // Hide the map after selection
+    };
     const [availabilitySchedule, setAvailabilitySchedule] = useState({
         Monday: { start: '', end: '' },
         Tuesday: { start: '', end: '' },
@@ -334,13 +338,13 @@ const handleInputChange = (e) => {
       
           {/* Facility Address with Search and LeafletMap */}
           <div>
-            <div className="modal-section">
+          <div className="modal-section">
               <label>Facility Address</label>
               <input
                 type="text"
                 value={facilityAddress}
                 placeholder="Search or click on map to select"
-                onClick={() => setShowMap(true)}
+                onClick={() => setShowMap(true)} // Show map when clicked
                 onChange={handleInputChange} // Enable typing and fetching suggestions
               />
             </div>
@@ -362,10 +366,7 @@ const handleInputChange = (e) => {
       
             {/* Show the Map for Address Selection */}
             {showMap && (
-              <LeafletMap onSelectAddress={(address) => {
-                setFacilityAddress(address);
-                setShowMap(false); // Close map after selection
-              }} />
+              <LeafletMap address={facilityAddress} onSelectAddress={handleSelectAddress} />
             )}
           </div>
       
