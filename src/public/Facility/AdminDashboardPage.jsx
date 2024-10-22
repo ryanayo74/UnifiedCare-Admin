@@ -40,20 +40,54 @@ function AdminDashboardPage() {
     const [showMap, setShowMap] = useState(false);
     const [suggestions, setSuggestions] = useState([]); 
     const [selectedFiles, setSelectedFiles] = useState([]);
-    const [scheduleAvailability, setScheduleAvailability] = useState([]);
     const storage = getStorage();
     const [imagesToRemove, setImagesToRemove] = useState([]);
     const handleSelectAddress = (address) => {
         setFacilityAddress(address); // Update the facility address
         setShowMap(false); // Hide the map after selection
     };
-    const [availabilitySchedule, setAvailabilitySchedule] = useState({
+    const [scheduleAvailability, setScheduleAvailability] = useState({
         Monday: { start: '', end: '' },
         Tuesday: { start: '', end: '' },
         Wednesday: { start: '', end: '' },
         Thursday: { start: '', end: '' },
         Friday: { start: '', end: '' },
+        Saturday: { start: '', end: '' },
+        Sunday: { start: '', end: '' },
     });
+    
+    const [dayTimeSlots, setDayTimeSlots] = useState({
+        Monday: [{ start: '', end: '' }],
+        Tuesday: [{ start: '', end: '' }],
+        Wednesday: [{ start: '', end: '' }],
+        Thursday: [{ start: '', end: '' }],
+        Friday: [{ start: '', end: '' }],
+        Saturday: [{ start: '', end: '' }],
+        Sunday: [{ start: '', end: '' }],
+    });
+
+    const handleModifyClick = (day) => {
+        setSelectedDay(day);
+        setIsDayModalOpen(true);
+    };
+
+    const addTimeSlot = () => {
+    setDayTimeSlots(prev => ({
+        ...prev,
+        [selectedDay]: [...prev[selectedDay], { start: '', end: '' }],
+    }));
+};
+
+const removeTimeSlot = (index) => {
+    setDayTimeSlots(prev => ({
+        ...prev,
+        [selectedDay]: prev[selectedDay].filter((_, i) => i !== index),
+    }));
+
+};
+    const [selectedDay, setSelectedDay] = useState(null);
+    const [isDayModalOpen, setIsDayModalOpen] = useState(false);
+    
 
     
     useEffect(() => {
@@ -246,24 +280,8 @@ const handleInputChange = (e) => {
         }
     };
 
-    const updateFirestoreImages = async (newImages) => {
-        if (currentDocId) {
-            try {
-                const docRef = doc(db, "Users", "facility", "userFacility", currentDocId);
-                await updateDoc(docRef, {
-                    additionalImages: newImages
-                });
-                console.log("Firestore updated successfully");
-            } catch (error) {
-                console.error("Error updating Firestore:", error);
-                setError("Failed to update the image list in Firestore.");
-            }
-        }
-    };
-
     const handleSaveAvailability = async () => {
         try {
-            const currentDocId = 'yourCurrentDocId'; // Replace with your logic to get the current document ID
             const docRef = doc(db, "Users", "facility", "userFacility", currentDocId, "scheduleAvailability", currentDocId);
             await setDoc(docRef, {
                 availabilitySchedule: scheduleAvailability,
@@ -289,12 +307,6 @@ const handleInputChange = (e) => {
         }
     };
 
-
-    const closeFacilityModal = () => {
-        setIsFacilityModalOpen(false);
-        setModalPage(1);  
-    };
-
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -303,6 +315,11 @@ const handleInputChange = (e) => {
             setFacilityImage(imagePreviewURL);  
             setError(null);
         }
+    };
+
+    const closeFacilityModal = () => {
+        setIsFacilityModalOpen(false);
+        setModalPage(1);  
     };
 
     const handleFacilityImageClick = () => {
@@ -387,47 +404,53 @@ const handleInputChange = (e) => {
             <div className="availability-form">
                 {Object.keys(scheduleAvailability).map((day) => (
                     <div key={day} className="availability-day">
-                        <label>
-                            <input
-                                type="checkbox"
-                                checked={scheduleAvailability[day].start !== ''} // Check if the day is selected
-                                onChange={(e) => {
-                                    const selected = e.target.checked;
-                                    setScheduleAvailability(prev => ({
-                                        ...prev,
-                                        [day]: selected ? { ...prev[day], start: prev[day].start || '', end: prev[day].end || '' } : { start: '', end: '' },
-                                    }));
-                                }}
-                            />
-                            {day}
-                        </label>
-                        {scheduleAvailability[day].start && (
-                            <div className="time-inputs">
-                                <input
-                                    type="time"
-                                    value={scheduleAvailability[day].start}
-                                    onChange={(e) => setScheduleAvailability(prev => ({
-                                        ...prev,
-                                        [day]: { ...prev[day], start: e.target.value },
-                                    }))}
-                                />
-                                <span>to</span>
-                                <input
-                                    type="time"
-                                    value={scheduleAvailability[day].end}
-                                    onChange={(e) => setScheduleAvailability(prev => ({
-                                        ...prev,
-                                        [day]: { ...prev[day], end: e.target.value },
-                                    }))}
-                                />
-                            </div>
-                        )}
+                        <span>{day}</span>
+                        <button className="modify-button" onClick={() => handleModifyClick(day)}>Modify</button>
                     </div>
                 ))}
             </div>
         </div>
     );
 
+    const renderDayModal = () => (
+        <div className="day-modal">
+            <div className="day-modal-content">
+                <h2> {selectedDay}</h2>
+                {dayTimeSlots[selectedDay].map((slot, index) => (
+                    <div key={index} className="time-slot">
+                        <label>Start:</label>
+                        <input
+                            type="time"
+                            value={slot.start}
+                            onChange={(e) => {
+                                const newSlots = [...dayTimeSlots[selectedDay]];
+                                newSlots[index].start = e.target.value;
+                                setDayTimeSlots(prev => ({ ...prev, [selectedDay]: newSlots }));
+                            }}
+                        />
+                        <label>End:</label>
+                        <input
+                            type="time"
+                            value={slot.end}
+                            onChange={(e) => {
+                                const newSlots = [...dayTimeSlots[selectedDay]];
+                                newSlots[index].end = e.target.value;
+                                setDayTimeSlots(prev => ({ ...prev, [selectedDay]: newSlots }));
+                            }}
+                        />
+                        <button onClick={() => removeTimeSlot(index)}>Remove</button>
+                    </div>
+                ))}
+                <button onClick={addTimeSlot}>Add Another Time Slot</button>
+                <button onClick={closeDayModal}>Return</button>
+            </div>
+        </div>
+    );
+
+    const closeDayModal = () => {
+        setIsDayModalOpen(false);
+    };
+    
       const handleLogout = () => {
         localStorage.removeItem('isAuthenticated');
         localStorage.removeItem('adminEmail');
@@ -726,7 +749,6 @@ const handleInputChange = (e) => {
                         </select>
                     </div>
 
-                    {/* Conditionally render either Bar or Line chart based on viewMode */}
                     {viewMode === 'avgSession' ? (
                         <div className="chart-container">
                             <Line data={avgSessionData} options={avgSessionOptions} />
@@ -748,8 +770,7 @@ const handleInputChange = (e) => {
                 </section>
             </main>
 
-{/* Facility Modal */}
-{isFacilityModalOpen && (
+            {isFacilityModalOpen && (
                 <div className="modal">
                     <div className="modal-content">
                         <div className="modal-header">
@@ -786,7 +807,6 @@ const handleInputChange = (e) => {
                             </button>
                         </div>
 
-                        {/* Conditional Rendering for Modal Pages */}
                         {modalPage === 1 ? (
                             renderModalContent()
                         ) : modalPage === 2 ? (
@@ -831,20 +851,22 @@ const handleInputChange = (e) => {
                                 </div>
                             </div>
                         ) : (
-                            renderScheduleAvailability() // Render the third modal for schedule availability
+                            renderScheduleAvailability()
                         )}
 
-                        <div className="modal-footer">
-                            <button className="btn-update" onClick={modalPage === 3 ? handleSaveAvailability : handleUpdateClick}>
-                                {modalPage === 3 ? 'UPDATE' : 'UPDATE'}
-                            </button>
-                            <button className="btn-cancel" onClick={() => setIsFacilityModalOpen(false)}>CANCEL</button>
-                        </div>
+                <div className="modal-footer">
+                        <button className="btn-update" onClick={modalPage === 3 ? handleSaveAvailability : handleUpdateClick}>
+                            {modalPage === 3 ? 'UPDATE' : 'UPDATE'}
+                        </button>
+                        <button className="btn-cancel" onClick={closeFacilityModal}>CANCEL</button>
                     </div>
                 </div>
-            )}
-        </div>
-    );
+            </div>
+        )}
+
+        {isDayModalOpen && renderDayModal()}
+    </div>
+);
 }
 
 export default AdminDashboardPage;
