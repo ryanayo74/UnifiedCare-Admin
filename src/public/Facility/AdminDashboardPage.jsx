@@ -284,18 +284,17 @@ const handleInputChange = (e) => {
         try {
             const docRef = doc(db, "Users", "facility", "userFacility", currentDocId, "scheduleAvailability", currentDocId);
             await setDoc(docRef, {
-                availabilitySchedule: scheduleAvailability,
+                availabilitySchedule: dayTimeSlots,
             }, { merge: true });
-
+    
             Swal.fire({
                 icon: 'success',
                 title: 'Availability Saved!',
                 text: 'Your schedule availability has been updated.',
                 confirmButtonText: 'Okay',
             });
-
-            setIsFacilityModalOpen(false);
-            setModalPage(1);
+    
+            setIsDayModalOpen(false);
         } catch (error) {
             console.error("Error saving availability:", error);
             Swal.fire({
@@ -415,7 +414,7 @@ const handleInputChange = (e) => {
     const renderDayModal = () => (
         <div className="day-modal">
             <div className="day-modal-content">
-                <h2> {selectedDay}</h2>
+                <h2>Modify Time for {selectedDay}</h2>
                 {dayTimeSlots[selectedDay].map((slot, index) => (
                     <div key={index} className="time-slot">
                         <label>Start:</label>
