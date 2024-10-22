@@ -24,6 +24,7 @@ import AdminParentsListPage from './public/Facility/AdminParentsListPage.jsx';
 import AdminFacilityAnnouncementPage from './public/Facility/AdminFacilityAnnouncementPage.jsx';
 import FacilityApprovalPage from './public/Facility/FacilityApprovalPage.jsx';
 import FacilityMessagePage from './public/Facility/FacilityMessagePage.jsx';
+import MessageDetailsPage from './public/Facility/MessageDetailsPage.jsx';
 
 
 // Components
@@ -139,7 +140,14 @@ export default function App() {
           } 
         />
 
-
+        <Route 
+          path="/messages/:userId" 
+          element={
+            <ProtectedRoute>
+              <MessageDetailsPage />
+            </ProtectedRoute>
+          }
+        />
 
       </Routes>
     </Router>
